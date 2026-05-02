@@ -1144,9 +1144,7 @@ function openGuideOverlay() {
 }
 
 function dismissGuideAndRetry() {
-  document.getElementById('gps-guide-overlay').classList.remove('visible');
-  gpsAttempts = 0;
-  requestGps();
+  window.location.reload();
 }
 
 function setGpsStatus(state, text, showRetry) {
