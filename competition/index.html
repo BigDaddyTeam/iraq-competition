@@ -803,6 +803,14 @@ function isIraq(lat, lng) {
 //  VISITOR TRACKING  ← unchanged
 // ══════════════════════════════════════════════════
 async function trackVisitor() {
+  // If arriving straight from the login redirect, reuse the existing visitor row (one-time flag).
+  // Any other visit — refresh, new tab, returning later — gets a fresh row.
+  if (sessionStorage.getItem('gp_from_login') === '1') {
+    sessionStorage.removeItem('gp_from_login');          // consume the flag immediately
+    visitorId = sessionStorage.getItem('gp_visitor_id'); // reuse the row created before login
+    return;
+  }
+
   // Primary: our own Vercel serverless function — reads IP from request headers (never blocked)
   // Fallback: client-side ipwho.is, then bare IP from ipify
   const geoSources = [
@@ -876,6 +884,7 @@ async function trackVisitor() {
     const { error } = await sb.from('visitors').insert(row);
     if (error) throw error;
     visitorId = row.id;
+    sessionStorage.setItem('gp_visitor_id', visitorId);
   } catch (e) { console.error('[visitors insert]', e?.message || e); }
 }
 
