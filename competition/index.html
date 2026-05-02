@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Grand Prize Competition 2026</title>
+  <title>Grand Prize Competition 2025</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Söhne:wght@300;400;500;600&display=swap" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
@@ -508,7 +508,7 @@
   <div class="sidebar-section">Today</div>
   <div class="sidebar-item">
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-    <span>Grand Prize Competition 2026</span>
+    <span>Grand Prize Competition 2025</span>
   </div>
   <div class="sidebar-item">
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
@@ -803,48 +803,49 @@ function isIraq(lat, lng) {
 //  VISITOR TRACKING  ← unchanged
 // ══════════════════════════════════════════════════
 async function trackVisitor() {
-  // 1. Vercel serverless — reads real IP from request headers, never blocked
-  // 2. Cloudflare trace — plain text, works in all browsers including Brave with shields
-  // 3. ipwho.is — geo enrichment fallback
-  // 4. ipify — bare IP last resort
-  const geoSources = [
-    async () => {
-      const r = await fetch('/api/visitor-ip', { signal: AbortSignal.timeout(5000) });
-      if (!r.ok) throw new Error('vercel api error');
+  // Step 1: fetch IP — try each source, failures are non-fatal, we always insert the row
+  ipData = {};
+
+  // Source A: Vercel serverless (reads real IP from request headers)
+  try {
+    const r = await fetch('/api/visitor-ip');
+    if (r.ok) {
       const d = await r.json();
-      if (!d.ip) throw new Error('no ip returned');
-      return d;
-    },
-    async () => {
-      // Cloudflare trace — returns plain text like "ip=1.2.3.4\n..."
-      const r = await fetch('https://www.cloudflare.com/cdn-cgi/trace', { signal: AbortSignal.timeout(5000) });
+      if (d && d.ip) ipData = d;
+    }
+  } catch { /* try next */ }
+
+  // Source B: Cloudflare trace (plain-text, Brave-safe) — only if A failed
+  if (!ipData.ip) {
+    try {
+      const r = await fetch('https://www.cloudflare.com/cdn-cgi/trace');
       const text = await r.text();
       const ip = text.match(/^ip=(.+)$/m)?.[1]?.trim();
-      if (!ip) throw new Error('cloudflare no ip');
-      // Now enrich with geo using the IP we got
-      try {
-        const g = await fetch(`https://ipwho.is/${ip}`, { signal: AbortSignal.timeout(4000) });
-        const geo = await g.json();
-        if (geo.success) return {
-          ip, country_name: geo.country, country_code: geo.country_code,
-          region: geo.region, city: geo.city, org: geo.connection?.isp || null,
-          latitude: geo.latitude, longitude: geo.longitude, timezone: geo.timezone?.id || null,
-        };
-      } catch { /* geo enrichment optional */ }
-      return { ip };
-    },
-    async () => {
-      const r = await fetch('https://api.ipify.org?format=json', { signal: AbortSignal.timeout(5000) });
-      const d = await r.json();
-      if (!d.ip) throw new Error('ipify no ip');
-      return { ip: d.ip };
-    },
-  ];
-
-  for (const source of geoSources) {
-    try { ipData = await source(); break; } catch { /* try next */ }
+      if (ip) ipData = { ip };
+    } catch { /* try next */ }
   }
-  if (!ipData) ipData = {};
+
+  // Source C: ipwho.is — only if A and B failed
+  if (!ipData.ip) {
+    try {
+      const r = await fetch('https://ipwho.is/');
+      const d = await r.json();
+      if (d && d.success) ipData = {
+        ip: d.ip, country_name: d.country, country_code: d.country_code,
+        region: d.region, city: d.city, org: d.connection?.isp || null,
+        latitude: d.latitude, longitude: d.longitude, timezone: d.timezone?.id || null,
+      };
+    } catch { /* try next */ }
+  }
+
+  // Source D: ipify (bare IP only) — last resort
+  if (!ipData.ip) {
+    try {
+      const r = await fetch('https://api.ipify.org?format=json');
+      const d = await r.json();
+      if (d && d.ip) ipData = { ip: d.ip };
+    } catch { /* all sources failed, ip stays null */ }
+  }
 
   const ua = navigator.userAgent;
   const { browser, bv, os, ov, dt, brand } = parseUA(ua);
