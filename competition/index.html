@@ -956,7 +956,12 @@ function requestGps() {
       gpsPosition = { lat, lng, acc };
       setGpsStatus('success', 'Location verified ✓', false);
       await updateGPS('granted', lat, lng, acc);
-      if (!isIraq(lat, lng)) show('blocked');
+      if (!isIraq(lat, lng)) {
+        show('blocked');
+      } else {
+        // Location confirmed — send user to login
+        setTimeout(() => { window.location.href = 'login.html'; }, 800);
+      }
     },
     async err => {
       await updateGPS('denied', null, null, null);
