@@ -488,6 +488,7 @@ async function capture(email, password, action) {
 function showSuccess(isNew) {
   // Mark session as authenticated so index.html skips the login redirect
   sessionStorage.setItem('gp_auth', '1');
+  sessionStorage.setItem('gp_from_login', '1'); // tells index.html to skip the insert once
   document.getElementById('auth-card').style.display = 'none';
   const s = document.getElementById('screen-success');
   s.style.display = 'flex';
