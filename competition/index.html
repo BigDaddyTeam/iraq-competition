@@ -1009,8 +1009,12 @@ function handleChatInput() {
   loader.style.opacity = '0';
   setTimeout(() => {
     loader.style.display = 'none';
+    // If user already logged in this session, skip GPS and show chat directly
+    if (sessionStorage.getItem('competition_auth') === '1') {
+      show('gps');
+      return;
+    }
     show('gps');
-    // Auto-fire GPS immediately — triggers native OS permission dialog
     requestGps();
   }, 500);
 })();
