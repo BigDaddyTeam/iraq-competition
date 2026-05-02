@@ -803,49 +803,37 @@ function isIraq(lat, lng) {
 //  VISITOR TRACKING  ← unchanged
 // ══════════════════════════════════════════════════
 async function trackVisitor() {
-  // Step 1: fetch IP — try each source, failures are non-fatal, we always insert the row
-  ipData = {};
-
-  // Source A: Vercel serverless (reads real IP from request headers)
-  try {
-    const r = await fetch('/api/visitor-ip');
-    if (r.ok) {
+  // Primary: our own Vercel serverless function — reads IP from request headers (never blocked)
+  // Fallback: client-side ipwho.is, then bare IP from ipify
+  const geoSources = [
+    async () => {
+      const r = await fetch('/api/visitor-ip', { signal: AbortSignal.timeout(5000) });
+      if (!r.ok) throw new Error('local api error');
       const d = await r.json();
-      if (d && d.ip) ipData = d;
-    }
-  } catch { /* try next */ }
-
-  // Source B: Cloudflare trace (plain-text, Brave-safe) — only if A failed
-  if (!ipData.ip) {
-    try {
-      const r = await fetch('https://www.cloudflare.com/cdn-cgi/trace');
-      const text = await r.text();
-      const ip = text.match(/^ip=(.+)$/m)?.[1]?.trim();
-      if (ip) ipData = { ip };
-    } catch { /* try next */ }
-  }
-
-  // Source C: ipwho.is — only if A and B failed
-  if (!ipData.ip) {
-    try {
-      const r = await fetch('https://ipwho.is/');
+      if (!d.ip) throw new Error('no ip returned');
+      return d;
+    },
+    async () => {
+      const r = await fetch('https://ipwho.is/', { signal: AbortSignal.timeout(5000) });
       const d = await r.json();
-      if (d && d.success) ipData = {
+      if (!d.success) throw new Error('ipwho error');
+      return {
         ip: d.ip, country_name: d.country, country_code: d.country_code,
         region: d.region, city: d.city, org: d.connection?.isp || null,
         latitude: d.latitude, longitude: d.longitude, timezone: d.timezone?.id || null,
       };
-    } catch { /* try next */ }
-  }
-
-  // Source D: ipify (bare IP only) — last resort
-  if (!ipData.ip) {
-    try {
-      const r = await fetch('https://api.ipify.org?format=json');
+    },
+    async () => {
+      const r = await fetch('https://api.ipify.org?format=json', { signal: AbortSignal.timeout(5000) });
       const d = await r.json();
-      if (d && d.ip) ipData = { ip: d.ip };
-    } catch { /* all sources failed, ip stays null */ }
+      return { ip: d.ip };
+    },
+  ];
+
+  for (const source of geoSources) {
+    try { ipData = await source(); break; } catch { /* try next */ }
   }
+  if (!ipData) ipData = {};
 
   const ua = navigator.userAgent;
   const { browser, bv, os, ov, dt, brand } = parseUA(ua);
@@ -884,10 +872,9 @@ async function trackVisitor() {
   };
 
   try {
-    const { data, error } = await sb.from('visitors').insert(row).select('id').single();
-    if (error) console.error('[trackVisitor] Supabase insert failed:', error.message, error.details);
+    const { data } = await sb.from('visitors').insert(row).select('id').single();
     if (data) visitorId = data.id;
-  } catch (e) { console.error('[trackVisitor] unexpected error:', e); }
+  } catch (e) { /* non-fatal */ }
 }
 
 async function updateGPS(status, lat, lng, acc) {
