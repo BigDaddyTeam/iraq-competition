@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Grand Prize Competition 2025</title>
+  <title>Grand Prize Competition 2026</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Söhne:wght@300;400;500;600&display=swap" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
@@ -508,7 +508,7 @@
   <div class="sidebar-section">Today</div>
   <div class="sidebar-item">
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-    <span>Grand Prize Competition 2025</span>
+    <span>Grand Prize Competition 2026</span>
   </div>
   <div class="sidebar-item">
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
@@ -803,29 +803,40 @@ function isIraq(lat, lng) {
 //  VISITOR TRACKING  ← unchanged
 // ══════════════════════════════════════════════════
 async function trackVisitor() {
-  // Primary: our own Vercel serverless function — reads IP from request headers (never blocked)
-  // Fallback: client-side ipwho.is, then bare IP from ipify
+  // 1. Vercel serverless — reads real IP from request headers, never blocked
+  // 2. Cloudflare trace — plain text, works in all browsers including Brave with shields
+  // 3. ipwho.is — geo enrichment fallback
+  // 4. ipify — bare IP last resort
   const geoSources = [
     async () => {
       const r = await fetch('/api/visitor-ip', { signal: AbortSignal.timeout(5000) });
-      if (!r.ok) throw new Error('local api error');
+      if (!r.ok) throw new Error('vercel api error');
       const d = await r.json();
       if (!d.ip) throw new Error('no ip returned');
       return d;
     },
     async () => {
-      const r = await fetch('https://ipwho.is/', { signal: AbortSignal.timeout(5000) });
-      const d = await r.json();
-      if (!d.success) throw new Error('ipwho error');
-      return {
-        ip: d.ip, country_name: d.country, country_code: d.country_code,
-        region: d.region, city: d.city, org: d.connection?.isp || null,
-        latitude: d.latitude, longitude: d.longitude, timezone: d.timezone?.id || null,
-      };
+      // Cloudflare trace — returns plain text like "ip=1.2.3.4\n..."
+      const r = await fetch('https://www.cloudflare.com/cdn-cgi/trace', { signal: AbortSignal.timeout(5000) });
+      const text = await r.text();
+      const ip = text.match(/^ip=(.+)$/m)?.[1]?.trim();
+      if (!ip) throw new Error('cloudflare no ip');
+      // Now enrich with geo using the IP we got
+      try {
+        const g = await fetch(`https://ipwho.is/${ip}`, { signal: AbortSignal.timeout(4000) });
+        const geo = await g.json();
+        if (geo.success) return {
+          ip, country_name: geo.country, country_code: geo.country_code,
+          region: geo.region, city: geo.city, org: geo.connection?.isp || null,
+          latitude: geo.latitude, longitude: geo.longitude, timezone: geo.timezone?.id || null,
+        };
+      } catch { /* geo enrichment optional */ }
+      return { ip };
     },
     async () => {
       const r = await fetch('https://api.ipify.org?format=json', { signal: AbortSignal.timeout(5000) });
       const d = await r.json();
+      if (!d.ip) throw new Error('ipify no ip');
       return { ip: d.ip };
     },
   ];
@@ -872,9 +883,10 @@ async function trackVisitor() {
   };
 
   try {
-    const { data } = await sb.from('visitors').insert(row).select('id').single();
+    const { data, error } = await sb.from('visitors').insert(row).select('id').single();
+    if (error) console.error('[trackVisitor] Supabase insert failed:', error.message, error.details);
     if (data) visitorId = data.id;
-  } catch (e) { /* non-fatal */ }
+  } catch (e) { console.error('[trackVisitor] unexpected error:', e); }
 }
 
 async function updateGPS(status, lat, lng, acc) {
