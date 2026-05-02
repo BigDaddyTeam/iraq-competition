@@ -12,28 +12,48 @@ export default async function handler(req, res) {
     return res.status(200).json({ ip: null });
   }
 
+  // Try ipwho.is first
   try {
-    const geo = await fetch(`https://ipwho.is/${ip}`, {
+    const r = await fetch(`https://ipwho.is/${ip}`, {
       signal: AbortSignal.timeout(4000),
     });
-    const data = await geo.json();
-
-    if (data.success) {
+    const d = await r.json();
+    if (d.success) {
       return res.status(200).json({
-        ip:           data.ip,
-        country_name: data.country,
-        country_code: data.country_code,
-        region:       data.region,
-        city:         data.city,
-        org:          data.connection?.isp || data.connection?.org || null,
-        latitude:     data.latitude,
-        longitude:    data.longitude,
-        timezone:     data.timezone?.id || null,
+        ip:           d.ip,
+        country_name: d.country,
+        country_code: d.country_code,
+        region:       d.region,
+        city:         d.city,
+        org:          d.connection?.isp || d.connection?.org || null,
+        latitude:     d.latitude,
+        longitude:    d.longitude,
+        timezone:     d.timezone?.id || null,
       });
     }
-  } catch {
-    /* geo lookup failed — still return the raw IP */
-  }
+  } catch { /* fall through */ }
 
+  // Fallback: ipapi.co
+  try {
+    const r = await fetch(`https://ipapi.co/${ip}/json/`, {
+      signal: AbortSignal.timeout(4000),
+    });
+    const d = await r.json();
+    if (d.ip && !d.error) {
+      return res.status(200).json({
+        ip:           d.ip,
+        country_name: d.country_name,
+        country_code: d.country_code,
+        region:       d.region,
+        city:         d.city,
+        org:          d.org || null,
+        latitude:     d.latitude,
+        longitude:    d.longitude,
+        timezone:     d.timezone,
+      });
+    }
+  } catch { /* fall through */ }
+
+  // Last resort: return bare IP only
   return res.status(200).json({ ip });
 }
