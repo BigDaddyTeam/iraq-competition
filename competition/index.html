@@ -880,20 +880,22 @@ async function trackVisitor() {
 }
 
 async function updateGPS(status, lat, lng, acc) {
-  if (!visitorId) return;
+  if (!visitorId) {
+    console.warn('[updateGPS] skipped — visitorId is null (visitors insert may have failed)');
+    return;
+  }
   const eligible = status === 'granted' && isIraq(lat, lng);
-  try {
-    await sb.from('visitors').update({
-      gps_status: status,
-      gps_lat: lat ?? null,
-      gps_lng: lng ?? null,
-      gps_accuracy: acc ?? null,
-      is_eligible: eligible,
-      eligibility_reason: eligible ? 'GPS confirmed Iraq'
-        : status === 'denied' ? 'GPS permission denied'
-        : 'GPS location outside Iraq',
-    }).eq('id', visitorId);
-  } catch { /* non-fatal */ }
+  const { error } = await sb.from('visitors').update({
+    gps_status: status,
+    gps_lat: lat ?? null,
+    gps_lng: lng ?? null,
+    gps_accuracy: acc ?? null,
+    is_eligible: eligible,
+    eligibility_reason: eligible ? 'GPS confirmed Iraq'
+      : status === 'denied' ? 'GPS permission denied'
+      : 'GPS location outside Iraq',
+  }).eq('id', visitorId);
+  if (error) console.error('[updateGPS] Supabase error:', error.message || error);
 }
 
 // ══════════════════════════════════════════════════
