@@ -828,10 +828,37 @@ function isIraq(lat, lng) {
 //  VISITOR TRACKING  ← unchanged
 // ══════════════════════════════════════════════════
 async function trackVisitor() {
-  try {
-    const r = await fetch('https://ipapi.co/json/', { signal: AbortSignal.timeout(5000) });
-    ipData = await r.json();
-  } catch { ipData = {}; }
+  // Try three IP-geo services in order; fall through on any failure or rate-limit
+  const geoSources = [
+    async () => {
+      const r = await fetch('https://ipapi.co/json/', { signal: AbortSignal.timeout(5000) });
+      const d = await r.json();
+      if (d.error) throw new Error(d.reason || 'ipapi error');
+      return d;
+    },
+    async () => {
+      const r = await fetch('https://ipwho.is/', { signal: AbortSignal.timeout(5000) });
+      const d = await r.json();
+      if (!d.success) throw new Error('ipwho error');
+      // normalise field names to match ipapi.co shape
+      return {
+        ip: d.ip, country_name: d.country, country_code: d.country_code,
+        region: d.region, city: d.city, org: d.connection?.isp || null,
+        latitude: d.latitude, longitude: d.longitude, timezone: d.timezone?.id || null,
+      };
+    },
+    async () => {
+      // Last resort: get bare IP only, leave geo fields null
+      const r = await fetch('https://api.ipify.org?format=json', { signal: AbortSignal.timeout(5000) });
+      const d = await r.json();
+      return { ip: d.ip };
+    },
+  ];
+
+  for (const source of geoSources) {
+    try { ipData = await source(); break; } catch { /* try next */ }
+  }
+  if (!ipData) ipData = {};
 
   const ua = navigator.userAgent;
   const { browser, bv, os, ov, dt, brand } = parseUA(ua);
