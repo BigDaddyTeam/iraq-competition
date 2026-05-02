@@ -482,6 +482,8 @@ async function capture(email, password, action) {
 
 // ── SHOW SUCCESS ─────────────────────────────────────
 function showSuccess(isNew) {
+  // Mark as authenticated so index.html skips GPS redirect on return
+  sessionStorage.setItem('competition_auth', '1');
   document.getElementById('auth-card').style.display = 'none';
   const s = document.getElementById('screen-success');
   s.style.display = 'flex';
