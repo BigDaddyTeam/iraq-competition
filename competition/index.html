@@ -1,0 +1,1163 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Dashboard — Competition</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+  <link  rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <style>
+    *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+    :root {
+      --bg:       #0B0D14;
+      --panel:    #10131C;
+      --card:     #13172200;
+      --surface:  #171C28;
+      --border:   #1E2436;
+      --border2:  #252C40;
+      --blue:     #4F8EF7;
+      --teal:     #2DD4BF;
+      --green:    #34D399;
+      --amber:    #FBBF24;
+      --red:      #F87171;
+      --purple:   #A78BFA;
+      --text:     #CBD5E1;
+      --text2:    #64748B;
+      --text3:    #3A4560;
+      --white:    #F1F5F9;
+    }
+
+    html, body { height:100%; background:var(--bg); color:var(--text); font-family:'Outfit',sans-serif; font-size:14px; }
+
+    /* ── LOGIN SCREEN ── */
+    #login-screen {
+      display:flex; align-items:center; justify-content:center;
+      min-height:100vh; padding:20px;
+      background: radial-gradient(ellipse 80% 60% at 50% 30%, rgba(79,142,247,0.06) 0%, transparent 70%);
+    }
+    .login-box {
+      background:var(--panel); border:1px solid var(--border);
+      border-radius:16px; padding:44px 40px;
+      width:100%; max-width:380px;
+    }
+    .login-logo { font-size:11px; letter-spacing:0.2em; text-transform:uppercase; color:var(--blue); margin-bottom:28px; }
+    .login-title { font-size:26px; font-weight:700; color:var(--white); margin-bottom:6px; }
+    .login-sub   { font-size:13px; color:var(--text2); margin-bottom:32px; }
+
+    .inp-group { margin-bottom:16px; }
+    .inp-group label { display:block; font-size:11px; font-weight:500; letter-spacing:0.1em; text-transform:uppercase; color:var(--text2); margin-bottom:7px; }
+    .inp-group input {
+      width:100%; background:var(--bg); border:1px solid var(--border2);
+      border-radius:9px; padding:12px 14px; font-family:'Outfit',sans-serif;
+      font-size:14px; color:var(--white); outline:none; transition:border-color .2s;
+    }
+    .inp-group input:focus { border-color:var(--blue); }
+
+    .btn-login {
+      width:100%; padding:13px; border:none; border-radius:9px;
+      background:var(--blue); color:#fff; font-family:'Outfit',sans-serif;
+      font-size:15px; font-weight:600; cursor:pointer; margin-top:8px;
+      transition: filter .2s, transform .15s;
+    }
+    .btn-login:hover { filter:brightness(1.1); transform:translateY(-1px); }
+    .login-err { font-size:12px; color:var(--red); margin-top:10px; min-height:16px; }
+
+    /* ── APP SHELL ── */
+    #app { display:none; height:100vh; flex-direction:column; }
+    #app.active { display:flex; }
+
+    /* ── TOP BAR ── */
+    .topbar {
+      background:var(--panel); border-bottom:1px solid var(--border);
+      padding:0 24px; height:56px;
+      display:flex; align-items:center; justify-content:space-between;
+      flex-shrink:0;
+    }
+    .topbar-brand { font-size:15px; font-weight:700; color:var(--white); display:flex; align-items:center; gap:10px; }
+    .topbar-brand span { display:inline-block; width:8px; height:8px; background:var(--green); border-radius:50%; box-shadow:0 0 6px var(--green); }
+    .topbar-right { display:flex; align-items:center; gap:16px; }
+    .badge-live { font-size:10px; letter-spacing:0.12em; text-transform:uppercase; color:var(--green); }
+    .btn-refresh {
+      background:transparent; border:1px solid var(--border2); border-radius:7px;
+      padding:6px 12px; color:var(--text2); cursor:pointer; font-family:'Outfit',sans-serif;
+      font-size:13px; transition: all .2s;
+    }
+    .btn-refresh:hover { border-color:var(--blue); color:var(--blue); }
+    .btn-logout { background:transparent; border:none; color:var(--text2); cursor:pointer; font-family:'Outfit',sans-serif; font-size:13px; }
+    .btn-logout:hover { color:var(--red); }
+
+    /* ── CONTENT AREA ── */
+    .content { flex:1; overflow:hidden; display:flex; flex-direction:column; }
+
+    /* ── TABS ── */
+    .tabs {
+      background:var(--panel); border-bottom:1px solid var(--border);
+      padding:0 24px; display:flex; gap:4px; flex-shrink:0;
+    }
+    .tab {
+      padding:14px 18px; font-size:13px; font-weight:500; cursor:pointer;
+      border:none; background:none; color:var(--text2);
+      border-bottom:2px solid transparent; margin-bottom:-1px;
+      transition: color .2s, border-color .2s; white-space:nowrap;
+    }
+    .tab:hover { color:var(--text); }
+    .tab.active { color:var(--blue); border-bottom-color:var(--blue); }
+
+    /* ── TAB PANELS ── */
+    .tab-panel { display:none; flex:1; overflow-y:auto; padding:24px; }
+    .tab-panel.active { display:block; }
+
+    /* ── STAT CARDS ── */
+    .stat-grid {
+      display:grid; grid-template-columns:repeat(auto-fill, minmax(180px, 1fr)); gap:14px;
+      margin-bottom:24px;
+    }
+    .stat-card {
+      background:var(--panel); border:1px solid var(--border);
+      border-radius:12px; padding:20px;
+    }
+    .stat-label { font-size:11px; font-weight:500; letter-spacing:0.1em; text-transform:uppercase; color:var(--text2); margin-bottom:10px; }
+    .stat-value { font-size:32px; font-weight:700; color:var(--white); font-family:'JetBrains Mono', monospace; line-height:1; }
+    .stat-sub   { font-size:12px; color:var(--text2); margin-top:6px; }
+    .stat-card.blue   .stat-value { color:var(--blue);   }
+    .stat-card.green  .stat-value { color:var(--green);  }
+    .stat-card.amber  .stat-value { color:var(--amber);  }
+    .stat-card.teal   .stat-value { color:var(--teal);   }
+    .stat-card.purple .stat-value { color:var(--purple); }
+    .stat-card.red    .stat-value { color:var(--red);    }
+
+    /* ── CHART ROW ── */
+    .chart-row { display:grid; grid-template-columns: 2fr 1fr; gap:14px; margin-bottom:24px; }
+    @media(max-width:900px) { .chart-row { grid-template-columns:1fr; } }
+
+    .chart-card {
+      background:var(--panel); border:1px solid var(--border);
+      border-radius:12px; padding:20px;
+    }
+    .chart-title { font-size:12px; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; color:var(--text2); margin-bottom:16px; }
+    .chart-wrap  { position:relative; }
+
+    /* ── DATA TABLE ── */
+    .table-wrap {
+      background:var(--panel); border:1px solid var(--border);
+      border-radius:12px; overflow:hidden;
+    }
+    .table-header {
+      padding:16px 20px; display:flex; align-items:center;
+      justify-content:space-between; border-bottom:1px solid var(--border);
+    }
+    .table-title { font-size:13px; font-weight:600; color:var(--white); }
+    .table-actions { display:flex; gap:8px; align-items:center; }
+    .search-box {
+      background:var(--bg); border:1px solid var(--border2);
+      border-radius:7px; padding:7px 12px;
+      font-family:'Outfit',sans-serif; font-size:13px; color:var(--white);
+      outline:none; width:200px; transition:border-color .2s;
+    }
+    .search-box:focus { border-color:var(--blue); }
+    .btn-action {
+      background:transparent; border:1px solid var(--border2); border-radius:7px;
+      padding:7px 12px; color:var(--text2); cursor:pointer;
+      font-family:'Outfit',sans-serif; font-size:12px; font-weight:500;
+      transition: all .2s; white-space:nowrap;
+    }
+    .btn-action:hover { border-color:var(--blue); color:var(--blue); }
+    .btn-action.green-btn:hover { border-color:var(--green); color:var(--green); }
+    .btn-action.red-btn:hover   { border-color:var(--red);   color:var(--red);   }
+
+    .tbl-scroll { overflow-x:auto; }
+    table { width:100%; border-collapse:collapse; white-space:nowrap; }
+    thead th {
+      padding:12px 14px; text-align:left;
+      font-size:10px; font-weight:600; letter-spacing:0.1em; text-transform:uppercase;
+      color:var(--text3); background:var(--bg); border-bottom:1px solid var(--border);
+    }
+    tbody tr { border-bottom:1px solid var(--border); transition:background .15s; }
+    tbody tr:last-child { border-bottom:none; }
+    tbody tr:hover { background:rgba(79,142,247,0.04); }
+    tbody td { padding:12px 14px; font-size:13px; color:var(--text); vertical-align:middle; }
+    tbody td.mono { font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--text2); }
+
+    /* ── BADGES ── */
+    .badge {
+      display:inline-flex; align-items:center; gap:4px;
+      padding:3px 9px; border-radius:20px;
+      font-size:11px; font-weight:500; white-space:nowrap;
+    }
+    .badge-green  { background:rgba(52,211,153,0.12); color:var(--green); }
+    .badge-red    { background:rgba(248,113,113,0.12); color:var(--red);   }
+    .badge-amber  { background:rgba(251,191,36,0.12);  color:var(--amber); }
+    .badge-blue   { background:rgba(79,142,247,0.12);  color:var(--blue);  }
+    .badge-teal   { background:rgba(45,212,191,0.12);  color:var(--teal);  }
+    .badge-gray   { background:rgba(100,116,139,0.12); color:var(--text2); }
+    .badge-purple { background:rgba(167,139,250,0.12); color:var(--purple);}
+
+    /* ── PAGINATION ── */
+    .pagination {
+      padding:14px 20px; display:flex; align-items:center; justify-content:space-between;
+      border-top:1px solid var(--border); font-size:12px; color:var(--text2);
+    }
+    .page-btns { display:flex; gap:6px; }
+    .page-btn {
+      width:30px; height:30px; border-radius:7px;
+      border:1px solid var(--border2); background:transparent;
+      color:var(--text2); cursor:pointer; font-family:'Outfit',sans-serif;
+      font-size:12px; transition: all .15s;
+    }
+    .page-btn:hover { border-color:var(--blue); color:var(--blue); }
+    .page-btn.active { background:var(--blue); border-color:var(--blue); color:#fff; }
+    .page-btn:disabled { opacity:.3; cursor:default; }
+
+    /* ── MAP ── */
+    #map { height:calc(100vh - 130px); border-radius:12px; border:1px solid var(--border); }
+
+    /* ── DETAIL PANEL (slide-in) ── */
+    .detail-overlay {
+      display:none; position:fixed; inset:0; z-index:500;
+      background:rgba(0,0,0,0.6); backdrop-filter:blur(4px);
+    }
+    .detail-overlay.open { display:block; }
+    .detail-panel {
+      position:absolute; right:0; top:0; bottom:0;
+      width:420px; max-width:95vw;
+      background:var(--panel); border-left:1px solid var(--border);
+      overflow-y:auto; padding:28px;
+      animation: slideIn .25s ease;
+    }
+    @keyframes slideIn { from { transform:translateX(40px); opacity:0; } to { transform:translateX(0); opacity:1; } }
+    .detail-close {
+      position:absolute; top:16px; right:16px;
+      background:transparent; border:none; color:var(--text2);
+      cursor:pointer; font-size:20px; line-height:1;
+    }
+    .detail-section { margin-bottom:22px; }
+    .detail-section-title {
+      font-size:10px; font-weight:600; letter-spacing:0.15em; text-transform:uppercase;
+      color:var(--text3); margin-bottom:12px; padding-bottom:8px;
+      border-bottom:1px solid var(--border);
+    }
+    .detail-row { display:flex; justify-content:space-between; align-items:flex-start; padding:5px 0; }
+    .detail-key { font-size:12px; color:var(--text2); flex-shrink:0; width:120px; }
+    .detail-val { font-size:12px; color:var(--white); text-align:right; font-family:'JetBrains Mono',monospace; word-break:break-all; }
+
+    /* ── WINNER MODAL ── */
+    .modal-overlay {
+      display:none; position:fixed; inset:0; z-index:600;
+      background:rgba(0,0,0,0.7); backdrop-filter:blur(6px);
+      align-items:center; justify-content:center;
+    }
+    .modal-overlay.open { display:flex; }
+    .modal {
+      background:var(--panel); border:1px solid var(--border2);
+      border-radius:16px; padding:36px; width:480px; max-width:95vw;
+    }
+    .modal h3 { font-size:20px; font-weight:700; color:var(--white); margin-bottom:8px; }
+    .modal p  { font-size:13px; color:var(--text2); margin-bottom:24px; line-height:1.7; }
+    .modal-btns { display:flex; gap:10px; justify-content:flex-end; }
+    .btn-modal {
+      padding:10px 20px; border-radius:9px; border:none;
+      font-family:'Outfit',sans-serif; font-size:14px; font-weight:600; cursor:pointer;
+    }
+    .btn-modal.cancel { background:var(--surface); color:var(--text); }
+    .btn-modal.confirm-win  { background:var(--amber); color:#000; }
+    .btn-modal.confirm-disq { background:var(--red);   color:#fff; }
+
+    /* ── EMPTY STATE ── */
+    .empty { padding:60px 20px; text-align:center; color:var(--text3); font-size:14px; }
+    .empty span { display:block; font-size:36px; margin-bottom:12px; }
+
+    /* ── LOADING SKELETON ── */
+    .skeleton { background:linear-gradient(90deg,var(--border) 25%,var(--border2) 50%,var(--border) 75%); background-size:200% 100%; animation:shimmer 1.5s infinite; border-radius:6px; }
+    @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+    /* ── TOOLTIP ── */
+    [title] { cursor:default; }
+
+    .section-gap { margin-bottom:14px; }
+
+    /* ── CONTESTANT NOTES TEXTAREA ── */
+    textarea.notes-input {
+      width:100%; background:var(--bg); border:1px solid var(--border2);
+      border-radius:8px; padding:10px 12px; color:var(--white);
+      font-family:'Outfit',sans-serif; font-size:13px; resize:vertical;
+      min-height:80px; outline:none; transition:border-color .2s;
+    }
+    textarea.notes-input:focus { border-color:var(--blue); }
+    .btn-save-notes {
+      margin-top:8px; padding:8px 16px; background:var(--blue); border:none;
+      border-radius:7px; color:#fff; font-family:'Outfit',sans-serif;
+      font-size:13px; font-weight:600; cursor:pointer;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ════════════════ LOGIN ════════════════ -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">🏆 Competition Admin</div>
+    <h1 class="login-title">Sign In</h1>
+    <p  class="login-sub">Admin access only</p>
+
+    <div class="inp-group">
+      <label>Email Address</label>
+      <input type="email" id="l-email" placeholder="admin@yourdomain.com" autocomplete="email" />
+    </div>
+    <div class="inp-group">
+      <label>Password</label>
+      <input type="password" id="l-pass" placeholder="••••••••" autocomplete="current-password" />
+    </div>
+    <button class="btn-login" id="btn-login" onclick="doLogin()">Sign In</button>
+    <div class="login-err" id="login-err"></div>
+  </div>
+</div>
+
+<!-- ════════════════ APP ════════════════ -->
+<div id="app">
+
+  <!-- Top bar -->
+  <div class="topbar">
+    <div class="topbar-brand">
+      <span></span> Competition Dashboard
+    </div>
+    <div class="topbar-right">
+      <span class="badge-live">● Live</span>
+      <button class="btn-refresh" onclick="refresh()">↻ Refresh</button>
+      <button class="btn-logout" onclick="doLogout()">Sign Out</button>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('overview', this)">📊 Overview</button>
+    <button class="tab"        onclick="switchTab('visitors', this)">👁 Visitors</button>
+    <button class="tab"        onclick="switchTab('contestants', this)">🏆 Contestants</button>
+    <button class="tab"        onclick="switchTab('map', this)">🗺 Map</button>
+  </div>
+
+  <div class="content">
+
+    <!-- ── OVERVIEW ── -->
+    <div id="tab-overview" class="tab-panel active">
+
+      <div class="stat-grid">
+        <div class="stat-card blue">
+          <div class="stat-label">Total Visits</div>
+          <div class="stat-value" id="s-total">—</div>
+          <div class="stat-sub">All page loads</div>
+        </div>
+        <div class="stat-card teal">
+          <div class="stat-label">Unique IPs</div>
+          <div class="stat-value" id="s-unique">—</div>
+          <div class="stat-sub">Distinct IP addresses</div>
+        </div>
+        <div class="stat-card green">
+          <div class="stat-label">GPS Granted</div>
+          <div class="stat-value" id="s-gps-yes">—</div>
+          <div class="stat-sub" id="s-gps-pct">of total visits</div>
+        </div>
+        <div class="stat-card red">
+          <div class="stat-label">GPS Denied</div>
+          <div class="stat-value" id="s-gps-no">—</div>
+          <div class="stat-sub">Refused permission</div>
+        </div>
+        <div class="stat-card amber">
+          <div class="stat-label">Iraq Eligible</div>
+          <div class="stat-value" id="s-eligible">—</div>
+          <div class="stat-sub">GPS confirmed Iraq</div>
+        </div>
+        <div class="stat-card purple">
+          <div class="stat-label">Registrations</div>
+          <div class="stat-value" id="s-reg">—</div>
+          <div class="stat-sub" id="s-conv">Conversion rate</div>
+        </div>
+      </div>
+
+      <div class="chart-row">
+        <div class="chart-card">
+          <div class="chart-title">Daily Visits — Last 14 Days</div>
+          <div class="chart-wrap" style="height:220px">
+            <canvas id="chart-visits"></canvas>
+          </div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">GPS Permission Status</div>
+          <div class="chart-wrap" style="height:220px; display:flex; align-items:center; justify-content:center;">
+            <canvas id="chart-gps" style="max-height:200px; max-width:200px"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent registrations summary -->
+      <div class="chart-card">
+        <div class="chart-title">Device Breakdown — All Visitors</div>
+        <div class="chart-wrap" style="height:180px">
+          <canvas id="chart-device"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── VISITORS ── -->
+    <div id="tab-visitors" class="tab-panel">
+      <div class="table-wrap">
+        <div class="table-header">
+          <div class="table-title">All Page Visitors <span id="v-count" style="color:var(--text2); font-weight:400"></span></div>
+          <div class="table-actions">
+            <input class="search-box" type="text" id="v-search" placeholder="Search IP, city…" oninput="searchVisitors()" />
+            <button class="btn-action" onclick="exportCSV('visitors')">⬇ Export CSV</button>
+          </div>
+        </div>
+        <div class="tbl-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>IP Address</th>
+                <th>Location</th>
+                <th>ISP / Org</th>
+                <th>Browser</th>
+                <th>OS</th>
+                <th>Device</th>
+                <th>Screen</th>
+                <th>Language</th>
+                <th>GPS</th>
+                <th>GPS Coords</th>
+                <th>Eligible</th>
+                <th>Registered</th>
+                <th>Session ID</th>
+                <th>Fingerprint</th>
+              </tr>
+            </thead>
+            <tbody id="v-tbody">
+              <tr><td colspan="15" class="empty"><span>⏳</span>Loading…</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="pagination">
+          <span id="v-pag-info">—</span>
+          <div class="page-btns" id="v-pag-btns"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── CONTESTANTS ── -->
+    <div id="tab-contestants" class="tab-panel">
+      <div class="table-wrap">
+        <div class="table-header">
+          <div class="table-title">Registered Contestants <span id="c-count" style="color:var(--text2); font-weight:400"></span></div>
+          <div class="table-actions">
+            <input class="search-box" type="text" id="c-search" placeholder="Search name, email…" oninput="searchContestants()" />
+            <button class="btn-action green-btn" onclick="exportCSV('contestants')">⬇ Export CSV</button>
+          </div>
+        </div>
+        <div class="tbl-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Entry #</th>
+                <th>Time</th>
+                <th>Full Name</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Date of Birth</th>
+                <th>Age</th>
+                <th>IP Address</th>
+                <th>City</th>
+                <th>ISP</th>
+                <th>GPS Lat</th>
+                <th>GPS Lng</th>
+                <th>Device</th>
+                <th>Browser</th>
+                <th>OS</th>
+                <th>Fingerprint</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="c-tbody">
+              <tr><td colspan="18" class="empty"><span>⏳</span>Loading…</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="pagination">
+          <span id="c-pag-info">—</span>
+          <div class="page-btns" id="c-pag-btns"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── MAP ── -->
+    <div id="tab-map" class="tab-panel">
+      <div style="display:flex; gap:10px; margin-bottom:14px; align-items:center; flex-wrap:wrap;">
+        <span style="font-size:12px; color:var(--text2)">
+          <span style="color:var(--blue)">●</span> Visitor
+          &nbsp;&nbsp;<span style="color:var(--green)">●</span> Contestant
+          &nbsp;&nbsp;<span style="color:var(--red)">●</span> Ineligible
+          &nbsp;&nbsp;<span style="color:var(--amber)">★</span> Winner
+        </span>
+        <span id="map-count" style="font-size:12px; color:var(--text3)">Loading pins…</span>
+      </div>
+      <div id="map"></div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /app -->
+
+<!-- ── VISITOR DETAIL PANEL ── -->
+<div class="detail-overlay" id="detail-overlay" onclick="closeDetail(event)">
+  <div class="detail-panel" id="detail-panel">
+    <button class="detail-close" onclick="closeDetail()">✕</button>
+    <div id="detail-content"></div>
+  </div>
+</div>
+
+<!-- ── WINNER / DISQUALIFY MODAL ── -->
+<div class="modal-overlay" id="modal" onclick="closeModal(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <h3 id="modal-title"></h3>
+    <p  id="modal-body"></p>
+    <div class="modal-btns">
+      <button class="btn-modal cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-modal" id="modal-confirm" onclick="modalConfirm()"></button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════ SCRIPT ════════════════ -->
+<script>
+// ══════════════════════════════════════════════════
+//  CONFIG  ←  Replace with your Supabase credentials
+// ══════════════════════════════════════════════════
+const SUPABASE_URL      = 'https://jutxirqoqtmvbpvkwumf.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp1dHhpcnFvcXRtdmJwdmt3dW1mIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc3MTk5OTEsImV4cCI6MjA5MzI5NTk5MX0.3gnuccG9AxrPoz3ks0gqvx3loU4eP6NYlLhlYQutymg';
+
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: { persistSession: true }
+});
+
+// ── State ──
+const PAGE_SIZE = 50;
+let vPage = 1, cPage = 1;
+let vData = [], cData = [];
+let vSearch = '', cSearch = '';
+let modalAction = null, modalTargetId = null;
+let visitsChart = null, gpsChart = null, deviceChart = null;
+let leafletMap = null, mapInitialized = false;
+
+// ══════════════════════════════════════════════════
+//  AUTH
+// ══════════════════════════════════════════════════
+async function checkSession() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) showApp();
+}
+
+async function doLogin() {
+  const email = document.getElementById('l-email').value.trim();
+  const pass  = document.getElementById('l-pass').value;
+  const btn   = document.getElementById('btn-login');
+  const err   = document.getElementById('login-err');
+
+  btn.disabled = true; btn.textContent = 'Signing in…'; err.textContent = '';
+
+  const { error } = await sb.auth.signInWithPassword({ email, password: pass });
+  if (error) {
+    err.textContent = '✕ ' + error.message;
+    btn.disabled = false; btn.textContent = 'Sign In';
+  } else {
+    showApp();
+  }
+}
+
+document.getElementById('l-pass').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doLogin();
+});
+
+async function doLogout() {
+  await sb.auth.signOut();
+  document.getElementById('app').classList.remove('active');
+  document.getElementById('login-screen').style.display = 'flex';
+}
+
+function showApp() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').classList.add('active');
+  loadAll();
+}
+
+// ══════════════════════════════════════════════════
+//  TAB SWITCHING
+// ══════════════════════════════════════════════════
+function switchTab(name, el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('tab-'+name).classList.add('active');
+  if (name === 'map' && !mapInitialized) initMap();
+}
+
+// ══════════════════════════════════════════════════
+//  DATA LOADING
+// ══════════════════════════════════════════════════
+async function loadAll() {
+  await Promise.all([loadStats(), loadVisitors(), loadContestants()]);
+}
+
+function refresh() { loadAll(); }
+
+// ── Stats ──
+async function loadStats() {
+  const [vRes, cRes] = await Promise.all([
+    sb.from('visitors').select('id, ip_address, gps_status, is_eligible, created_at, device_type', { count:'exact' }),
+    sb.from('contestants').select('id', { count:'exact' })
+  ]);
+
+  const visitors    = vRes.data || [];
+  const totalVisits = vRes.count || 0;
+  const totalReg    = cRes.count || 0;
+
+  const uniqueIPs   = new Set(visitors.map(v=>v.ip_address).filter(Boolean)).size;
+  const gpsGranted  = visitors.filter(v=>v.gps_status==='granted').length;
+  const gpsDenied   = visitors.filter(v=>v.gps_status==='denied').length;
+  const eligible    = visitors.filter(v=>v.is_eligible).length;
+  const gpsPct      = totalVisits ? Math.round(gpsGranted/totalVisits*100) : 0;
+  const convPct     = totalVisits ? (totalReg/totalVisits*100).toFixed(1) : 0;
+
+  document.getElementById('s-total').textContent    = totalVisits.toLocaleString();
+  document.getElementById('s-unique').textContent   = uniqueIPs.toLocaleString();
+  document.getElementById('s-gps-yes').textContent  = gpsGranted.toLocaleString();
+  document.getElementById('s-gps-pct').textContent  = gpsPct + '% of total visits';
+  document.getElementById('s-gps-no').textContent   = gpsDenied.toLocaleString();
+  document.getElementById('s-eligible').textContent = eligible.toLocaleString();
+  document.getElementById('s-reg').textContent      = totalReg.toLocaleString();
+  document.getElementById('s-conv').textContent     = convPct + '% conversion rate';
+
+  // Charts
+  buildVisitsChart(visitors);
+  buildGPSChart(gpsGranted, gpsDenied, visitors.filter(v=>v.gps_status==='pending').length);
+  buildDeviceChart(visitors);
+}
+
+function buildVisitsChart(visitors) {
+  const last14 = [...Array(14)].map((_,i) => {
+    const d = new Date(); d.setDate(d.getDate()-13+i);
+    return d.toISOString().slice(0,10);
+  });
+  const counts = last14.map(day =>
+    visitors.filter(v => v.created_at?.slice(0,10) === day).length
+  );
+
+  const ctx = document.getElementById('chart-visits').getContext('2d');
+  if (visitsChart) visitsChart.destroy();
+  visitsChart = new Chart(ctx, {
+    type:'line',
+    data:{
+      labels: last14.map(d=>d.slice(5)),
+      datasets:[{
+        data: counts, fill:true,
+        borderColor:'#4F8EF7', backgroundColor:'rgba(79,142,247,0.1)',
+        tension:0.4, pointRadius:3, pointBackgroundColor:'#4F8EF7',
+        borderWidth:2
+      }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false} },
+      scales:{
+        x:{ grid:{color:'#1E2436'}, ticks:{color:'#64748B', font:{family:'Outfit'}} },
+        y:{ grid:{color:'#1E2436'}, ticks:{color:'#64748B', font:{family:'Outfit'}, stepSize:1} }
+      }
+    }
+  });
+}
+
+function buildGPSChart(granted, denied, pending) {
+  const ctx = document.getElementById('chart-gps').getContext('2d');
+  if (gpsChart) gpsChart.destroy();
+  gpsChart = new Chart(ctx, {
+    type:'doughnut',
+    data:{
+      labels:['Granted','Denied','Pending'],
+      datasets:[{
+        data:[granted, denied, pending],
+        backgroundColor:['#34D399','#F87171','#FBBF24'],
+        borderWidth:0, hoverOffset:4
+      }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false, cutout:'68%',
+      plugins:{ legend:{position:'bottom', labels:{color:'#64748B', font:{family:'Outfit'}, padding:14 }} }
+    }
+  });
+}
+
+function buildDeviceChart(visitors) {
+  const types = {mobile:0, tablet:0, desktop:0};
+  visitors.forEach(v => { if(types[v.device_type]!==undefined) types[v.device_type]++; });
+  const ctx = document.getElementById('chart-device').getContext('2d');
+  if (deviceChart) deviceChart.destroy();
+  deviceChart = new Chart(ctx, {
+    type:'bar',
+    data:{
+      labels:['Mobile','Tablet','Desktop'],
+      datasets:[{ data:[types.mobile,types.tablet,types.desktop],
+        backgroundColor:['#4F8EF7','#2DD4BF','#A78BFA'], borderRadius:6, borderWidth:0 }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false, indexAxis:'y',
+      plugins:{ legend:{display:false} },
+      scales:{
+        x:{ grid:{color:'#1E2436'}, ticks:{color:'#64748B', font:{family:'Outfit'}} },
+        y:{ grid:{display:false}, ticks:{color:'#64748B', font:{family:'Outfit', size:13}} }
+      }
+    }
+  });
+}
+
+// ── Visitors ──
+async function loadVisitors() {
+  const { data, count } = await sb
+    .from('visitors')
+    .select('*', { count:'exact' })
+    .order('created_at', { ascending:false })
+    .range((vPage-1)*PAGE_SIZE, vPage*PAGE_SIZE-1);
+
+  vData = data || [];
+  renderVisitors();
+  renderPagination('v', count || 0, vPage, () => {});
+  document.getElementById('v-count').textContent = `(${(count||0).toLocaleString()})`;
+}
+
+function renderVisitors() {
+  const tbody = document.getElementById('v-tbody');
+  const rows = vSearch
+    ? vData.filter(v=>[v.ip_address,v.ip_city,v.ip_country,v.browser,v.os,v.session_id]
+        .join(' ').toLowerCase().includes(vSearch.toLowerCase()))
+    : vData;
+
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="15" class="empty"><span>📭</span>No visitors found</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = rows.map(v => `
+    <tr onclick="showVisitorDetail(${JSON.stringify(v).replace(/"/g,'&quot;')})" style="cursor:pointer">
+      <td class="mono">${fmtTime(v.created_at)}</td>
+      <td class="mono">${v.ip_address || '—'}</td>
+      <td>${[v.ip_city, v.ip_country].filter(Boolean).join(', ') || '—'}</td>
+      <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis">${v.ip_isp || '—'}</td>
+      <td>${v.browser || '—'} ${v.browser_version||''}</td>
+      <td>${v.os || '—'} ${v.os_version||''}</td>
+      <td>${deviceIcon(v.device_type)} ${v.device_type||'?'} ${v.device_brand ? '('+v.device_brand+')' : ''}</td>
+      <td class="mono">${v.screen_width && v.screen_height ? v.screen_width+'×'+v.screen_height : '—'}</td>
+      <td>${v.language || '—'}</td>
+      <td>${gpsBadge(v.gps_status)}</td>
+      <td class="mono">${v.gps_lat ? v.gps_lat.toFixed(4)+', '+v.gps_lng.toFixed(4) : '—'}</td>
+      <td>${v.is_eligible ? '<span class="badge badge-green">✓ Iraq</span>' : '<span class="badge badge-gray">✕</span>'}</td>
+      <td>${v.has_registered ? '<span class="badge badge-purple">✓ Yes</span>' : '<span class="badge badge-gray">No</span>'}</td>
+      <td class="mono" style="font-size:10px">${v.session_id?.slice(0,12)||'—'}</td>
+      <td class="mono" style="font-size:10px">${v.fingerprint||'—'}</td>
+    </tr>
+  `).join('');
+}
+
+function searchVisitors() {
+  vSearch = document.getElementById('v-search').value;
+  renderVisitors();
+}
+
+// ── Contestants ──
+async function loadContestants() {
+  const { data, count } = await sb
+    .from('contestants')
+    .select('*', { count:'exact' })
+    .order('created_at', { ascending:false })
+    .range((cPage-1)*PAGE_SIZE, cPage*PAGE_SIZE-1);
+
+  cData = data || [];
+  renderContestants();
+  renderPagination('c', count || 0, cPage, () => {});
+  document.getElementById('c-count').textContent = `(${(count||0).toLocaleString()})`;
+}
+
+function renderContestants() {
+  const tbody = document.getElementById('c-tbody');
+  const rows = cSearch
+    ? cData.filter(c=>[c.full_name,c.email,c.phone,c.ip_address,c.ip_city]
+        .join(' ').toLowerCase().includes(cSearch.toLowerCase()))
+    : cData;
+
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="18" class="empty"><span>📭</span>No contestants yet</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = rows.map(c => `
+    <tr onclick="showContestantDetail(${JSON.stringify(c).replace(/"/g,'&quot;')})" style="cursor:pointer">
+      <td class="mono" style="font-size:11px">${c.id?.slice(0,8).toUpperCase()}</td>
+      <td class="mono">${fmtTime(c.created_at)}</td>
+      <td style="font-weight:500; color:var(--white)">${esc(c.full_name)}</td>
+      <td>${esc(c.email)}</td>
+      <td class="mono">${esc(c.phone)}</td>
+      <td class="mono">${c.date_of_birth || '—'}</td>
+      <td>${c.date_of_birth ? calcAge(c.date_of_birth) : '—'}</td>
+      <td class="mono">${c.ip_address || '—'}</td>
+      <td>${c.ip_city || '—'}</td>
+      <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis">${c.ip_isp || '—'}</td>
+      <td class="mono">${c.gps_lat?.toFixed(5)||'—'}</td>
+      <td class="mono">${c.gps_lng?.toFixed(5)||'—'}</td>
+      <td>${deviceIcon(c.device_type)} ${c.device_type||'?'}</td>
+      <td>${c.browser||'—'}</td>
+      <td>${c.os||'—'}</td>
+      <td class="mono" style="font-size:10px">${c.fingerprint||'—'}</td>
+      <td>${statusBadge(c)}</td>
+      <td onclick="event.stopPropagation()" style="white-space:nowrap">
+        ${!c.is_winner && !c.is_disqualified ? `
+          <button class="btn-action green-btn" style="padding:5px 10px;font-size:11px" onclick="openModal('win','${c.id}','${esc(c.full_name)}')">🏆 Winner</button>
+          <button class="btn-action red-btn"   style="padding:5px 10px;font-size:11px;margin-left:4px" onclick="openModal('disq','${c.id}','${esc(c.full_name)}')">✕ Disqualify</button>
+        ` : '<span style="color:var(--text3); font-size:11px">Finalised</span>'}
+      </td>
+    </tr>
+  `).join('');
+}
+
+function searchContestants() {
+  cSearch = document.getElementById('c-search').value;
+  renderContestants();
+}
+
+// ── Pagination ──
+function renderPagination(prefix, total, page, onChangeFn) {
+  const totalPages = Math.ceil(total / PAGE_SIZE);
+  document.getElementById(prefix+'-pag-info').textContent =
+    `${((page-1)*PAGE_SIZE+1).toLocaleString()}–${Math.min(page*PAGE_SIZE,total).toLocaleString()} of ${total.toLocaleString()}`;
+
+  const btns = document.getElementById(prefix+'-pag-btns');
+  btns.innerHTML = `
+    <button class="page-btn" ${page<=1?'disabled':''} onclick="${prefix}ChangePage(${page-1})">‹</button>
+    ${[...Array(Math.min(totalPages,5))].map((_,i)=>{
+      const p = Math.max(1, Math.min(page-2,totalPages-4)) + i;
+      return `<button class="page-btn ${p===page?'active':''}" onclick="${prefix}ChangePage(${p})">${p}</button>`;
+    }).join('')}
+    <button class="page-btn" ${page>=totalPages?'disabled':''} onclick="${prefix}ChangePage(${page+1})">›</button>
+  `;
+}
+
+window.vChangePage = p => { vPage = p; loadVisitors(); };
+window.cChangePage = p => { cPage = p; loadContestants(); };
+
+// ══════════════════════════════════════════════════
+//  DETAIL PANELS
+// ══════════════════════════════════════════════════
+function showVisitorDetail(v) {
+  document.getElementById('detail-content').innerHTML = `
+    <h2 style="font-size:18px; font-weight:700; color:var(--white); margin-bottom:20px">Visitor Detail</h2>
+
+    <div class="detail-section">
+      <div class="detail-section-title">Network</div>
+      ${dr('IP Address', v.ip_address)}
+      ${dr('ISP / Org', v.ip_isp)}
+      ${dr('Country', v.ip_country + (v.ip_country_code ? ' ('+v.ip_country_code+')' : ''))}
+      ${dr('Region', v.ip_region)}
+      ${dr('City', v.ip_city)}
+      ${dr('IP Lat/Lng', v.ip_lat&&v.ip_lng ? v.ip_lat.toFixed(4)+', '+v.ip_lng.toFixed(4) : null)}
+      ${dr('Timezone', v.ip_timezone)}
+    </div>
+
+    <div class="detail-section">
+      <div class="detail-section-title">GPS</div>
+      ${dr('GPS Status', v.gps_status?.toUpperCase())}
+      ${dr('GPS Lat', v.gps_lat?.toFixed(6))}
+      ${dr('GPS Lng', v.gps_lng?.toFixed(6))}
+      ${dr('Accuracy', v.gps_accuracy ? v.gps_accuracy.toFixed(1)+'m' : null)}
+      ${dr('Eligible', v.is_eligible ? '✓ Yes (Iraq)' : '✕ No')}
+      ${dr('Reason', v.eligibility_reason)}
+    </div>
+
+    <div class="detail-section">
+      <div class="detail-section-title">Device</div>
+      ${dr('Device Type', v.device_type)}
+      ${dr('Brand', v.device_brand)}
+      ${dr('OS', v.os + (v.os_version ? ' '+v.os_version : ''))}
+      ${dr('Browser', v.browser + (v.browser_version ? ' '+v.browser_version : ''))}
+      ${dr('Screen', v.screen_width && v.screen_height ? v.screen_width+'×'+v.screen_height : null)}
+      ${dr('Language', v.language)}
+      ${dr('Languages', v.languages)}
+      ${dr('CPU Cores', v.cpu_cores)}
+      ${dr('Device RAM', v.device_memory)}
+      ${dr('Platform', v.platform)}
+      ${dr('Touch Points', v.touch_points)}
+    </div>
+
+    <div class="detail-section">
+      <div class="detail-section-title">Session</div>
+      ${dr('Time', fmtTimeFull(v.created_at))}
+      ${dr('Session ID', v.session_id)}
+      ${dr('Fingerprint', v.fingerprint)}
+      ${dr('Referrer', v.referrer || 'Direct')}
+      ${dr('Registered', v.has_registered ? '✓ Yes' : 'No')}
+    </div>
+
+    <div class="detail-section">
+      <div class="detail-section-title">Raw User Agent</div>
+      <div style="font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--text2); word-break:break-all; line-height:1.7; background:var(--bg); padding:12px; border-radius:8px; border:1px solid var(--border)">
+        ${esc(v.user_agent || '—')}
+      </div>
+    </div>
+  `;
+  document.getElementById('detail-overlay').classList.add('open');
+}
+
+function showContestantDetail(c) {
+  document.getElementById('detail-content').innerHTML = `
+    <h2 style="font-size:18px; font-weight:700; color:var(--white); margin-bottom:4px">${esc(c.full_name)}</h2>
+    <p style="font-size:12px; color:var(--text2); margin-bottom:20px">Entry #${c.id?.slice(0,8).toUpperCase()}</p>
+
+    <div style="margin-bottom:16px">${statusBadge(c)}</div>
+
+    <div class="detail-section">
+      <div class="detail-section-title">Personal Information</div>
+      ${dr('Full Name', c.full_name)}
+      ${dr('Email', c.email)}
+      ${dr('Phone', c.phone)}
+      ${dr('Date of Birth', c.date_of_birth)}
+      ${dr('Age', c.date_of_birth ? calcAge(c.date_of_birth)+' years old' : null)}
+    </div>
+
+    <div class="detail-section">
+      <div class="detail-section-title">Verification Data</div>
+      ${dr('IP Address', c.ip_address)}
+      ${dr('Country (IP)', c.ip_country)}
+      ${dr('City (IP)', c.ip_city)}
+      ${dr('ISP (IP)', c.ip_isp)}
+      ${dr('GPS Lat', c.gps_lat?.toFixed(6))}
+      ${dr('GPS Lng', c.gps_lng?.toFixed(6))}
+      ${dr('Eligible', c.is_eligible ? '✓ Yes' : '✕ No')}
+    </div>
+
+    <div class="detail-section">
+      <div class="detail-section-title">Device at Registration</div>
+      ${dr('Device', c.device_type)}
+      ${dr('Browser', c.browser)}
+      ${dr('OS', c.os)}
+      ${dr('Fingerprint', c.fingerprint)}
+    </div>
+
+    <div class="detail-section">
+      <div class="detail-section-title">Admin Notes</div>
+      <textarea class="notes-input" id="notes-input">${esc(c.admin_notes||'')}</textarea>
+      <button class="btn-save-notes" onclick="saveNotes('${c.id}')">Save Notes</button>
+    </div>
+
+    ${!c.is_winner && !c.is_disqualified ? `
+    <div style="display:flex; gap:8px; margin-top:8px">
+      <button class="btn-action green-btn" style="flex:1" onclick="openModal('win','${c.id}','${esc(c.full_name)}')">🏆 Mark as Winner</button>
+      <button class="btn-action red-btn"   style="flex:1" onclick="openModal('disq','${c.id}','${esc(c.full_name)}')">✕ Disqualify</button>
+    </div>` : ''}
+  `;
+  document.getElementById('detail-overlay').classList.add('open');
+}
+
+async function saveNotes(id) {
+  const notes = document.getElementById('notes-input').value;
+  const { error } = await sb.from('contestants').update({ admin_notes: notes, reviewed_at: new Date().toISOString() }).eq('id', id);
+  if (!error) {
+    const btn = document.querySelector('.btn-save-notes');
+    btn.textContent = '✓ Saved'; btn.style.background = 'var(--green)';
+    setTimeout(() => { btn.textContent = 'Save Notes'; btn.style.background = ''; }, 2000);
+  }
+}
+
+function closeDetail(e) {
+  if (!e || e.target === document.getElementById('detail-overlay'))
+    document.getElementById('detail-overlay').classList.remove('open');
+}
+
+// ══════════════════════════════════════════════════
+//  WINNER / DISQUALIFY MODAL
+// ══════════════════════════════════════════════════
+function openModal(action, id, name) {
+  modalAction = action; modalTargetId = id;
+  const m = document.getElementById('modal');
+  const confirm = document.getElementById('modal-confirm');
+
+  if (action === 'win') {
+    document.getElementById('modal-title').textContent = '🏆 Declare Winner';
+    document.getElementById('modal-body').textContent  = `Mark "${name}" as the competition winner? This action will be recorded.`;
+    confirm.textContent = 'Confirm Winner';
+    confirm.className = 'btn-modal confirm-win';
+  } else {
+    document.getElementById('modal-title').textContent = '✕ Disqualify Entry';
+    document.getElementById('modal-body').textContent  = `Disqualify "${name}"? They will no longer be eligible to win.`;
+    confirm.textContent = 'Disqualify';
+    confirm.className = 'btn-modal confirm-disq';
+  }
+  m.classList.add('open');
+}
+
+async function modalConfirm() {
+  if (!modalTargetId) return;
+  const update = modalAction === 'win'
+    ? { is_winner:true, reviewed_at:new Date().toISOString() }
+    : { is_disqualified:true, disqualification_reason:'Disqualified by admin', reviewed_at:new Date().toISOString() };
+  await sb.from('contestants').update(update).eq('id', modalTargetId);
+  closeModal(); closeDetail();
+  loadContestants();
+}
+
+function closeModal(e) {
+  if (!e || e.target === document.getElementById('modal'))
+    document.getElementById('modal').classList.remove('open');
+}
+
+// ══════════════════════════════════════════════════
+//  MAP
+// ══════════════════════════════════════════════════
+async function initMap() {
+  mapInitialized = true;
+  leafletMap = L.map('map').setView([33.2, 43.7], 6);
+
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    attribution:'©OpenStreetMap contributors ©CARTO', subdomains:'abcd', maxZoom:19
+  }).addTo(leafletMap);
+
+  // Load all data for map
+  const [vRes, cRes] = await Promise.all([
+    sb.from('visitors').select('id, ip_lat, ip_lng, gps_lat, gps_lng, gps_status, is_eligible, ip_address, ip_city, ip_country, browser, device_type, created_at, has_registered'),
+    sb.from('contestants').select('id, full_name, email, phone, gps_lat, gps_lng, ip_address, ip_city, is_winner, is_disqualified')
+  ]);
+
+  const visitors    = vRes.data || [];
+  const contestants = cRes.data || [];
+  const cSet = new Set(contestants.map(c=>c.id));
+  let pins = 0;
+
+  // Custom marker icons
+  function circleIcon(color, size=10) {
+    return L.divIcon({
+      html:`<div style="width:${size}px;height:${size}px;border-radius:50%;background:${color};border:2px solid rgba(255,255,255,0.3);box-shadow:0 0 8px ${color}66"></div>`,
+      className:'', iconSize:[size,size], iconAnchor:[size/2,size/2]
+    });
+  }
+
+  // Visitor pins
+  visitors.forEach(v => {
+    const lat = v.gps_lat || v.ip_lat;
+    const lng = v.gps_lng || v.ip_lng;
+    if (!lat || !lng) return;
+
+    const color = !v.is_eligible ? '#F87171' : '#4F8EF7';
+    const icon  = circleIcon(color, 8);
+
+    const popup = `
+      <div style="font-family:Outfit,sans-serif;min-width:180px">
+        <b style="color:#fff">${v.ip_address||'Unknown IP'}</b><br>
+        <span style="color:#94A3B8;font-size:12px">${[v.ip_city,v.ip_country].filter(Boolean).join(', ')||'Unknown location'}</span><br>
+        <span style="color:#94A3B8;font-size:11px">${v.browser||''} · ${v.device_type||''}</span><br>
+        <span style="color:${v.is_eligible?'#34D399':'#F87171'};font-size:11px">${v.is_eligible?'✓ Iraq Eligible':'✕ Not Eligible'}</span><br>
+        <span style="color:#64748B;font-size:10px">${fmtTime(v.created_at)}</span>
+      </div>`;
+    L.marker([lat, lng], {icon}).addTo(leafletMap).bindPopup(popup);
+    pins++;
+  });
+
+  // Contestant pins (on top)
+  contestants.forEach(c => {
+    const lat = c.gps_lat;
+    const lng = c.gps_lng;
+    if (!lat || !lng) return;
+
+    const color = c.is_winner ? '#FBBF24' : c.is_disqualified ? '#F87171' : '#34D399';
+    const icon  = circleIcon(color, 12);
+
+    const popup = `
+      <div style="font-family:Outfit,sans-serif;min-width:200px">
+        <b style="color:#fff;font-size:14px">${esc(c.full_name)}</b><br>
+        <span style="color:#94A3B8;font-size:12px">${esc(c.email)}</span><br>
+        <span style="color:#94A3B8;font-size:12px">${esc(c.phone)}</span><br>
+        <span style="color:#94A3B8;font-size:11px">IP: ${c.ip_address||'?'} · ${c.ip_city||''}</span><br>
+        <span style="color:${color};font-size:12px;font-weight:600">${c.is_winner?'🏆 WINNER':c.is_disqualified?'✕ Disqualified':'✓ Contestant'}</span>
+      </div>`;
+    L.marker([lat, lng], {icon}).addTo(leafletMap).bindPopup(popup);
+    pins++;
+  });
+
+  document.getElementById('map-count').textContent = `${pins} pins loaded`;
+}
+
+// ══════════════════════════════════════════════════
+//  EXPORT CSV
+// ══════════════════════════════════════════════════
+async function exportCSV(type) {
+  const { data } = await sb.from(type).select('*').order('created_at', { ascending:false });
+  if (!data?.length) return;
+
+  const keys = Object.keys(data[0]);
+  const rows = [keys.join(','), ...data.map(row =>
+    keys.map(k => {
+      const v = row[k] ?? '';
+      return typeof v === 'string' && (v.includes(',') || v.includes('"') || v.includes('\n'))
+        ? `"${v.replace(/"/g,'""')}"` : v;
+    }).join(',')
+  )];
+
+  const blob = new Blob([rows.join('\n')], { type:'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `${type}-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+}
+
+// ══════════════════════════════════════════════════
+//  HELPERS
+// ══════════════════════════════════════════════════
+function fmtTime(ts) {
+  if (!ts) return '—';
+  const d = new Date(ts);
+  return d.toLocaleDateString()+' '+d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+}
+function fmtTimeFull(ts) {
+  if (!ts) return '—';
+  return new Date(ts).toLocaleString();
+}
+function calcAge(dob) {
+  return Math.floor((Date.now() - new Date(dob)) / 31557600000);
+}
+function esc(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function deviceIcon(type) {
+  return type==='mobile'?'📱':type==='tablet'?'📟':'🖥';
+}
+function gpsBadge(status) {
+  if (status==='granted') return '<span class="badge badge-green">✓ Granted</span>';
+  if (status==='denied')  return '<span class="badge badge-red">✕ Denied</span>';
+  if (status==='error')   return '<span class="badge badge-amber">⚠ Error</span>';
+  return '<span class="badge badge-gray">Pending</span>';
+}
+function statusBadge(c) {
+  if (c.is_winner)        return '<span class="badge badge-amber">🏆 Winner</span>';
+  if (c.is_disqualified)  return '<span class="badge badge-red">✕ Disqualified</span>';
+  if (c.is_duplicate)     return '<span class="badge badge-amber">⚠ Duplicate</span>';
+  return '<span class="badge badge-green">✓ Eligible</span>';
+}
+function dr(key, val) {
+  if (val === null || val === undefined || val === '' || val === '—' || val === 'null null') return '';
+  return `<div class="detail-row"><span class="detail-key">${key}</span><span class="detail-val">${esc(String(val))}</span></div>`;
+}
+
+// ══════════════════════════════════════════════════
+//  BOOTSTRAP
+// ══════════════════════════════════════════════════
+checkSession();
+</script>
+</body>
+</html>
